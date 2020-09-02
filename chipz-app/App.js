@@ -13,7 +13,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { HomeScreen } from './components/HomeScreen';
 import { CreateForm } from './components/CreateForm';
 import { JoinForm } from './components/JoinForm';
-
+import { PlayerList } from './components/PlayerList';
 
 const theme = {
     ...DefaultTheme,
@@ -32,9 +32,10 @@ const App = () => {
         <PaperProvider theme={theme}>
             <NavigationContainer>
                 <Stack.Navigator>
-                    <Stack.Screen name="Home" component={HomeScreen}/>
-                    <Stack.Screen name="Create Game" component={CreateForm}/>
-                    <Stack.Screen name="Join Game" component={JoinForm}/>
+                    <Stack.Screen name="Home" component={HomeScreen} />
+                    <Stack.Screen name="Create Game" component={CreateForm} />
+                    <Stack.Screen name="Join Game" component={JoinForm} />
+                    <Stack.Screen name="Players" component={PlayerList} />
                 </Stack.Navigator>
             </NavigationContainer>
         </PaperProvider>

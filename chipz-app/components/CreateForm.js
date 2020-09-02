@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import { View, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
 
+import { gStyle, buttonUnderlayColor } from './globalStyle'; 
+
 const styles = StyleSheet.create({
     fieldContainer: {
         flex: 1,
@@ -16,23 +18,9 @@ const styles = StyleSheet.create({
         marginRight: 7,
         paddingLeft: 10
     },
-    button: {
-        height: 50,
-        backgroundColor: '#48BBEC',
-        borderColor: '#48BBEC',
-        alignSelf: 'stretch',
-        margin: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 5
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18
-    },
 });
 
-export const CreateForm = () => {
+export const CreateForm = ({navigation}) => {
 
     const [startingChips, setStartingChips] = useState(null);
     const [useBlinds, setUseBlinds] = useState(true);
@@ -82,8 +70,8 @@ export const CreateForm = () => {
                     style={{width: "75%"}}
                 />
             </View>
-            <TouchableHighlight style={styles.button} onPress={() => console.log("Starting Game")} disabled={!startingChips}>
-                <Text style={styles.buttonText}>Start Game</Text>
+            <TouchableHighlight style={gStyle.button} onPress={() => navigation.navigate("Players")} disabled={!startingChips} underlayColor={buttonUnderlayColor}>
+                <Text style={gStyle.buttonText}>Start Game</Text>
             </TouchableHighlight>
         </View>
     );
