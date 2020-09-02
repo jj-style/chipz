@@ -1,85 +1,93 @@
 import React, {useState} from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-
-import { TextInput, Switch, Headline, Button } from 'react-native-paper';
-import Slider from '@react-native-community/slider';
+import { View, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
 
 const styles = StyleSheet.create({
-    formContainer: {
+    fieldContainer: {
         flex: 1,
-        flexDirection: 'column',
+        marginTop: 20,
+        marginBottom: 20,
+        marginRight: 10,
+        marginLeft: 10,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'space-around'
+    },
+    text: {
+        height: 40,
+        width: 130,
+        margin: 0,
+        marginRight: 7,
+        paddingLeft: 10
+    },
+    button: {
+        height: 50,
+        backgroundColor: '#48BBEC',
+        borderColor: '#48BBEC',
+        alignSelf: 'stretch',
         margin: 10,
-        height: "80%",
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 5
     },
-    formRow: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingLeft: '5%',
-        paddingRight: '5%',
-        paddingTop: '5%',
-        textAlignVertical: 'center'
+    buttonText: {
+        color: '#fff',
+        fontSize: 18
     },
-    rowElement: {
-        height: "20%",
-        width: "40%",
-    }
 });
 
-export const CreateForm = ({navigation}) => {
+export const CreateForm = () => {
 
-    const [startingChips, setStartingChips] = useState("");
-    const [blindsOn, toggleBlinds] = useState(true);
-    const [startBlinds, setStartBlinds] = useState(10);
-    const [incBlinds, setIncBlinds] = useState(10);
+    const [startingChips, setStartingChips] = useState(0);
+    const [useBlinds, setUseBlinds] = useState(true);
+    const [startingBlinds, setStartingBlinds] = useState(0);
+    const [blindInterval, setBlindInterval] = useState(15);
 
     return (
-        <View style={styles.formContainer}>
-            <TextInput
-                label="Starting chips"
-                value={startingChips}
-                onChangeText={text => setStartingChips(text)}
-                mode="flat"
-            />
-            <View style={styles.formRow}>
-                <Headline style={styles.rowElement}>Blinds</Headline>
-                <Switch
-                    style={styles.rowElement}
-                    value={blindsOn}
-                    onValueChange={() => {toggleBlinds(!blindsOn)}}
+        <View style={{flex: 1}}>
+            <View style={styles.fieldContainer}>
+                <TextInput
+                    style={styles.text}
+                    keyboardType="numeric"
+                    placeholder="Starting chips"
+                    spellCheck={false}
+                    value={startingChips}
+                    onChangeText={(e) => setStartingChips(Number(e))}
+                    underlineColorAndroid="#48BBEC"
                 />
-            </View>
-            <View style={styles.formRow}>
-                <Text style={styles.rowElement}>Starting Blinds: £{startBlinds}</Text>
-                <Slider
-                    style={styles.rowElement}
+                <View style={{flexDirection:'row', alignItems:'stretch'}}>
+                    <Text style={{marginRight: 30}}>Blinds</Text>
+                    <Switch
+                        trackColor={{ false: "maroon", true: "darkgreen" }}
+                        thumbColor={useBlinds ? "green" : "red"}
+                        ios_backgroundColor="#3e3e3e"
+                        onValueChange={() => setUseBlinds(!useBlinds)}
+                        value={useBlinds}
+                    />
+                </View>
+                <Text>Starting Blinds: £{startingBlinds}</Text>
+                <Slider 
+                    disabled={!useBlinds}
                     minimumValue={0}
-                    maximumValue={Number(startingChips)}
-                    minimumTrackTintColor="#248f24"
-                    maximumTrackTintColor="#000000"
+                    maximumValue={startingChips || 1000}
                     step={10}
-                    value={startBlinds}
-                    onValueChange={n => {setStartBlinds(n)}}
-                    disabled={!blindsOn}
+                    onValueChange={(n) => setStartingBlinds(n)}
+                    value={startingBlinds}
+                    style={{width: "75%"}}
                 />
-            </View>
-            <View style={styles.formRow}>
-                <Text style={styles.rowElement}>Blind Increment: {incBlinds} minutes</Text>
-                <Slider
-                    style={styles.rowElement}
+                <Text>Blind interval: {blindInterval} minutes {!blindInterval?"(Blinds won't increase)":""}</Text>
+                <Slider 
+                    disabled={!useBlinds}
                     minimumValue={0}
-                    maximumValue={Number(60)}
-                    minimumTrackTintColor="#248f24"
-                    maximumTrackTintColor="#000000"
+                    maximumValue={60}
                     step={5}
-                    value={incBlinds}
-                    onValueChange={n => {setIncBlinds(n)}}
-                    disabled={!blindsOn}
+                    onValueChange={(n) => setBlindInterval(n)}
+                    value={blindInterval}
+                    style={{width: "75%"}}
                 />
             </View>
-            <Button mode="text" compact={true} onPress={() => navigation.navigate("Home")}>
-                Start Game
-            </Button>
+            <TouchableHighlight style={styles.button} onPress={() => console.log("Starting Game")}>
+                <Text style={styles.buttonText}>Start Game</Text>
+            </TouchableHighlight>
         </View>
     );
 }

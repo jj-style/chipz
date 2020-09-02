@@ -1,41 +1,39 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-
-import { Button } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableHighlight, Image } from 'react-native';
 
 const styles = StyleSheet.create({
-    logoImage: {
-        width: "50%",
-        height: "70%",
-        alignSelf: "center"
-    }, 
-    buttonContainer: {
-        flex: 1,
-        flexDirection: "column"
+    logo: {
+        width: "75%",
+        height: "75%",
+        alignSelf: 'center'
     },
     button: {
-        height: 60,
+        height: 50,
+        backgroundColor: '#48BBEC',
+        borderColor: '#48BBEC',
+        alignSelf: 'stretch',
+        margin: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        alignSelf: 'stretch',
-        marginBottom: 50
+        borderRadius: 5
     },
     buttonText: {
-        fontSize: 20
-    }
+        color: '#fff',
+        fontSize: 18
+    },
 });
 
 export const HomeScreen = ({navigation}) => {
     return (
         <View>
-            <Image source={require("../assets/splash.png")} style={styles.logoImage}/>
-            <View style={styles.buttonContainer}>
-                <Button mode="text" compact={true} onPress={() => navigation.navigate("Create Game")} style={styles.button} labelStyle={styles.buttonText}>
-                    Create Game
-                </Button>
-                <Button mode="text" compact={true} onPress={() => navigation.navigate("Join Game")} style={styles.button} labelStyle={styles.buttonText}>
-                    Join Game
-                </Button>
+            <View>
+                <Image style={styles.logo} source={require("../assets/splash.png")} />
+                <TouchableHighlight style={styles.button} onPress={() => navigation.navigate("Create Game")}>
+                    <Text style={styles.buttonText}>Create Game</Text>
+                </TouchableHighlight>
+                <TouchableHighlight style={styles.button} onPress={() => navigation.navigate("Join Game")}>
+                    <Text style={styles.buttonText}>Join Game</Text>
+                </TouchableHighlight>
             </View>
         </View>
     );
