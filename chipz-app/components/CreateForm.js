@@ -4,17 +4,14 @@ import { View, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight }
 const styles = StyleSheet.create({
     fieldContainer: {
         flex: 1,
-        marginTop: 20,
-        marginBottom: 20,
-        marginRight: 10,
-        marginLeft: 10,
+        margin: 10,
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'space-around'
     },
     text: {
         height: 40,
-        width: 130,
+        width: "75%",
         margin: 0,
         marginRight: 7,
         paddingLeft: 10
@@ -37,7 +34,7 @@ const styles = StyleSheet.create({
 
 export const CreateForm = () => {
 
-    const [startingChips, setStartingChips] = useState(0);
+    const [startingChips, setStartingChips] = useState(null);
     const [useBlinds, setUseBlinds] = useState(true);
     const [startingBlinds, setStartingBlinds] = useState(0);
     const [blindInterval, setBlindInterval] = useState(15);
@@ -51,7 +48,7 @@ export const CreateForm = () => {
                     placeholder="Starting chips"
                     spellCheck={false}
                     value={startingChips}
-                    onChangeText={(e) => setStartingChips(Number(e))}
+                    onChangeText={(e) => setStartingChips(e)}
                     underlineColorAndroid="#48BBEC"
                 />
                 <View style={{flexDirection:'row', alignItems:'stretch'}}>
@@ -64,11 +61,11 @@ export const CreateForm = () => {
                         value={useBlinds}
                     />
                 </View>
-                <Text>Starting Blinds: £{startingBlinds}</Text>
+                <Text>Starting Blinds: £{startingBlinds}/{startingBlinds*2}</Text>
                 <Slider 
                     disabled={!useBlinds}
                     minimumValue={0}
-                    maximumValue={startingChips || 1000}
+                    maximumValue={Number(startingChips) || 100}
                     step={10}
                     onValueChange={(n) => setStartingBlinds(n)}
                     value={startingBlinds}
@@ -85,7 +82,7 @@ export const CreateForm = () => {
                     style={{width: "75%"}}
                 />
             </View>
-            <TouchableHighlight style={styles.button} onPress={() => console.log("Starting Game")}>
+            <TouchableHighlight style={styles.button} onPress={() => console.log("Starting Game")} disabled={!startingChips}>
                 <Text style={styles.buttonText}>Start Game</Text>
             </TouchableHighlight>
         </View>
