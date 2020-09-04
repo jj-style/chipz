@@ -1,14 +1,14 @@
 import { StyleSheet } from 'react-native';
 
 export const buttonUnderlayColor = '#7ecff1';
-const buttonColor = '#48BBEC';
+export const primary = '#48BBEC';
 const borderColor = '#48BBEC';
-const buttonTextColor = '#fff';
+export const primaryText = '#fff';
 
-export const gStyle = StyleSheet.create({
+export const styles = StyleSheet.create({
     button: {
         height: 50,
-        backgroundColor: buttonColor,
+        backgroundColor: primary,
         borderColor: borderColor,
         alignSelf: 'stretch',
         margin: 10,
@@ -17,7 +17,7 @@ export const gStyle = StyleSheet.create({
         borderRadius: 5
     },
     buttonText: {
-        color: buttonTextColor,
+        color: primaryText,
         fontSize: 18
     },
 });

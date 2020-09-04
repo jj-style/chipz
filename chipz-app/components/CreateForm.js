@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
 
-import { gStyle, buttonUnderlayColor } from './globalStyle'; 
+import * as gStyle from './globalStyle'; 
 
 const styles = StyleSheet.create({
     fieldContainer: {
@@ -71,8 +71,8 @@ export const CreateForm = ({navigation}) => {
                     style={{width: "75%"}}
                 />
             </View>
-            <TouchableHighlight style={gStyle.button} onPress={() => navigation.navigate("Players")} disabled={!startingChips} underlayColor={buttonUnderlayColor}>
-                <Text style={gStyle.buttonText}>Start Game</Text>
+            <TouchableHighlight style={gStyle.styles.button} onPress={() => navigation.navigate("Players")} disabled={!startingChips} underlayColor={gStyle.buttonUnderlayColor}>
+                <Text style={gStyle.styles.buttonText}>Start Game</Text>
             </TouchableHighlight>
         </View>
         </TouchableWithoutFeedback>

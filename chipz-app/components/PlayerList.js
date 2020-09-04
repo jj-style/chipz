@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { View, TouchableOpacity, Text, TouchableHighlight } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 
-import { gStyle, buttonUnderlayColor } from './globalStyle';
+import * as gStyle from './globalStyle';
 
 const tmpData = [
     { name: "Alan Turing" },
@@ -56,8 +56,8 @@ export class PlayerList extends Component {
                     keyExtractor={(item, index) => `draggable-item-${index}`}
                     onDragEnd={({ data }) => this.setState({ data })}
                 />
-                <TouchableHighlight style={gStyle.button} onPress={() => console.log("Begin game")} underlayColor={buttonUnderlayColor}>
-                    <Text style={gStyle.buttonText}>Begin Game</Text>
+                <TouchableHighlight style={gStyle.styles.button} onPress={() => console.log("Begin game")} underlayColor={gStyle.buttonUnderlayColor}>
+                    <Text style={gStyle.styles.buttonText}>Begin Game</Text>
                 </TouchableHighlight>
             </View>
         );

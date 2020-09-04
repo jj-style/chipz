@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableHighlight, Image } from 'react-native';
 
-import { gStyle, buttonUnderlayColor } from './globalStyle';
+import * as gStyle from './globalStyle';
 
 const styles = StyleSheet.create({
     logo: {
@@ -16,11 +16,11 @@ export const HomeScreen = ({navigation}) => {
         <View>
             <View>
                 <Image style={styles.logo} source={require("../assets/splash.png")} />
-                <TouchableHighlight style={gStyle.button} onPress={() => navigation.navigate("Create Game")} underlayColor={buttonUnderlayColor}>
-                    <Text style={gStyle.buttonText}>Create Game</Text>
+                <TouchableHighlight style={gStyle.styles.button} onPress={() => navigation.navigate("Create Game")} underlayColor={gStyle.buttonUnderlayColor}>
+                    <Text style={gStyle.styles.buttonText}>Create Game</Text>
                 </TouchableHighlight>
-                <TouchableHighlight style={gStyle.button} onPress={() => navigation.navigate("Join Game")} underlayColor={buttonUnderlayColor}>
-                    <Text style={gStyle.buttonText}>Join Game</Text>
+                <TouchableHighlight style={gStyle.styles.button} onPress={() => navigation.navigate("Join Game")} underlayColor={gStyle.buttonUnderlayColor}>
+                    <Text style={gStyle.styles.buttonText}>Join Game</Text>
                 </TouchableHighlight>
             </View>
         </View>
