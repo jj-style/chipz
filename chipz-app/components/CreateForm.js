@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { View, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
+import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
 
 import { gStyle, buttonUnderlayColor } from './globalStyle'; 
 
@@ -28,6 +28,7 @@ export const CreateForm = ({navigation}) => {
     const [blindInterval, setBlindInterval] = useState(15);
 
     return (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={{flex: 1}}>
             <View style={styles.fieldContainer}>
                 <TextInput
@@ -53,7 +54,7 @@ export const CreateForm = ({navigation}) => {
                 <Slider 
                     disabled={!useBlinds}
                     minimumValue={0}
-                    maximumValue={Number(startingChips) || 100}
+                    maximumValue={Number(startingChips/2) || 100}
                     step={10}
                     onValueChange={(n) => setStartingBlinds(n)}
                     value={startingBlinds}
@@ -74,5 +75,6 @@ export const CreateForm = ({navigation}) => {
                 <Text style={gStyle.buttonText}>Start Game</Text>
             </TouchableHighlight>
         </View>
+        </TouchableWithoutFeedback>
     );
 }
