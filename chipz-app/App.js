@@ -12,6 +12,7 @@ import { HomeScreen } from './components/HomeScreen';
 import { CreateForm } from './components/CreateForm';
 import { JoinForm } from './components/JoinForm';
 import { PlayerList } from './components/PlayerList';
+import { GameScreen } from './components/GameScreen';
 
 import * as gStyle from './components/globalStyle.js';
 
@@ -35,6 +36,8 @@ const App = () => {
                 <Stack.Screen name="Create Game" component={CreateForm} />
                 <Stack.Screen name="Join Game" component={JoinForm} />
                 <Stack.Screen name="Players" component={PlayerList} />
+                <Stack.Screen name="Game Screen" component={GameScreen} options={{ headerShown: false }}/>
+
             </Stack.Navigator>
         </NavigationContainer>
     );

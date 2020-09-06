@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
 
 import * as gStyle from './globalStyle'; 
+import { StyledButton } from './StyledButton';
 
 const styles = StyleSheet.create({
     fieldContainer: {
@@ -38,7 +39,7 @@ export const CreateForm = ({navigation}) => {
                     spellCheck={false}
                     value={startingChips}
                     onChangeText={(e) => setStartingChips(e)}
-                    underlineColorAndroid="#48BBEC"
+                    underlineColorAndroid={gStyle.primary}
                 />
                 <View style={{flexDirection:'row', alignItems:'stretch'}}>
                     <Text style={{marginRight: 30}}>Blinds</Text>
@@ -71,9 +72,11 @@ export const CreateForm = ({navigation}) => {
                     style={{width: "75%"}}
                 />
             </View>
-            <TouchableHighlight style={gStyle.styles.button} onPress={() => navigation.navigate("Players")} disabled={!startingChips} underlayColor={gStyle.buttonUnderlayColor}>
-                <Text style={gStyle.styles.buttonText}>Start Game</Text>
-            </TouchableHighlight>
+            <StyledButton 
+                buttonText="Start Game"
+                onPress={() => navigation.navigate("Players")}
+                disabled={!startingChips}
+            />
         </View>
         </TouchableWithoutFeedback>
     );

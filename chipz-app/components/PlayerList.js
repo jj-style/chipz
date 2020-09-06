@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, TouchableHighlight } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 
 import * as gStyle from './globalStyle';
+import { StyledButton } from './StyledButton';
 
 const tmpData = [
     { name: "Alan Turing" },
@@ -16,6 +17,10 @@ export class PlayerList extends Component {
     state = {
         data: tmpData
     };
+
+    constructor(props) {
+        super(props)
+    }
 
     renderItem = ({ item, index, drag, isActive }) => {
         return (
@@ -56,9 +61,10 @@ export class PlayerList extends Component {
                     keyExtractor={(item, index) => `draggable-item-${index}`}
                     onDragEnd={({ data }) => this.setState({ data })}
                 />
-                <TouchableHighlight style={gStyle.styles.button} onPress={() => console.log("Begin game")} underlayColor={gStyle.buttonUnderlayColor}>
-                    <Text style={gStyle.styles.buttonText}>Begin Game</Text>
-                </TouchableHighlight>
+                <StyledButton
+                    buttonText="Begin Game"
+                    onPress={() => this.props.navigation.navigate("Game Screen")}
+                />
             </View>
         );
     }

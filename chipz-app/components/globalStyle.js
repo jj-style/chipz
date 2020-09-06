@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
         margin: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 5
+        borderRadius: 10
     },
     buttonText: {
         color: primaryText,
