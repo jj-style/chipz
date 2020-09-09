@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableHighlight, Slider } from 'react-native';                
+import { View, Text, StyleSheet, TouchableHighlight, Slider, FlatList } from 'react-native';                
 
 import * as gStyle from './globalStyle';
 import { StyledButton } from './StyledButton';
+
+import { NavigationContainer, Ta } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const tmpState = {
     pot: 20,
     smallBlind: 10,
     lastBet: null, // so next min bet is twice this if not null otherwise small blind
-    playersChips: 100 // will this be list of all players or just this ones?
+    playersChips: 100, // will this be list of all players or just this ones?
+    players: [
+        {name: "Alan", chips: 100, key: '1'},
+        {name: "Dennis", chips: 75, key: '2'},
+        {name: "Charles", chips: 210, key: '3'},
+        {name: "Ken", chips: 20, key: '4'},
+        {name: "Donald", chips: 300, key: '5'}
+    ]
 }
 
 const styles = StyleSheet.create({
@@ -43,16 +55,27 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         width: "100%",
         borderRadius: 10
+    },
+    // following styles for info page
+    infoName: {
+        width: "70%",
+        fontSize: 30
+    },
+    infoChips: {
+        fontSize: 30
+    },
+    infoPlayers: {
+        marginTop: 20,
+        marginLeft: 10,
+        marginRight: 10,
     }
 });
 
-export const GameScreen = ({navigation}) => {
+const PlayScreen = () => {
     const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
     const [ newBet, setNewBet ] = useState(minBet);
 
-    //TODO: Reset navigation so can't go back
-
-    return (
+    return(
         <View style={{flex: 1, margin: 10, marginTop: 30}}>
             <View style={styles.infoBox}>
                 <Text>Chips: £{tmpState.playersChips}</Text>
@@ -122,5 +145,60 @@ export const GameScreen = ({navigation}) => {
                 </TouchableHighlight>
             </View>
         </View>
+    );
+}
+
+const PlayerStats = ({info}) => {
+    return (
+        <View style={{flex: 1, flexDirection: 'row'}}>
+            <Text style={styles.infoName}>{info.name}</Text>
+            <Text style={styles.infoChips}>£{info.chips}</Text>
+        </View>
+    );
+}
+
+const InfoScreen = () => {
+    return (
+        <View style={styles.infoPlayers}>
+            <Text style={[{textAlign:'center'},styles.bigText]}>Table Standings</Text>
+            <FlatList
+                data={tmpState.players.sort((a,b) => { return b.chips - a.chips })}
+                renderItem={ ({item}) => <PlayerStats info={item} /> }
+            />
+        </View>
+    );
+}
+
+const Tab = createBottomTabNavigator();
+
+export const GameScreen = ({navigation}) => {
+    //TODO: Reset navigation so can't go back
+
+    return (
+        <NavigationContainer independent={true}>
+            <Tab.Navigator
+                screenOptions={({ route }) => ({
+                    tabBarIcon: ({ focused, color, size }) => {
+                        let iconName;
+            
+                        if (route.name === 'Play') {
+                        iconName = focused
+                            ? 'cards'
+                            : 'cards-outline';
+                        } else if (route.name === 'Info') {
+                        iconName = focused ? 'account-group' : 'account-group-outline';
+                        }
+                        return <Icon name={iconName} size={size} color={color} />;
+                    },
+                    })}
+                    tabBarOptions={{
+                    activeTintColor: 'tomato',
+                    inactiveTintColor: 'gray',
+                    }}
+            >
+                <Tab.Screen name="Play" component={PlayScreen}/>
+                <Tab.Screen name="Info" component={InfoScreen}/>
+            </Tab.Navigator>
+        </NavigationContainer>
     );
 }
