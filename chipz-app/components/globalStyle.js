@@ -1,4 +1,5 @@
-import { StyleSheet } from 'react-native';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 export const buttonUnderlayColor = '#7ecff1';
 export const primary = '#48BBEC';
@@ -21,3 +22,14 @@ export const styles = StyleSheet.create({
         fontSize: 18
     },
 });
+
+export const HorizontalRule = () => {
+    return <View 
+                style={{
+                    borderBottomColor: 'black',
+                    borderBottomWidth: 1,
+                    marginTop: 15,
+                    marginBottom: 15
+                }}
+    />
+}

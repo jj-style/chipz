@@ -13,13 +13,13 @@ const tmpState = {
     pot: 20,
     smallBlind: 10,
     lastBet: null, // so next min bet is twice this if not null otherwise small blind
-    playersChips: 100, // will this be list of all players or just this ones?
+    thisPlayer: "Alan",
     players: [
-        {name: "Alan", chips: 100, key: '1'},
-        {name: "Dennis", chips: 75, key: '2'},
-        {name: "Charles", chips: 210, key: '3'},
-        {name: "Ken", chips: 20, key: '4'},
-        {name: "Donald", chips: 300, key: '5'}
+        {name: "Alan", chips: 100, infront: 10, key: '1'},
+        {name: "Dennis", chips: 75, infront: 0, key: '2'},
+        {name: "Charles", chips: 210, infront: 0, key: '3'},
+        {name: "Ken", chips: 20, infront: 0, key: '4'},
+        {name: "Donald", chips: 300, infront: 0, key: '5'}
     ]
 }
 
@@ -37,13 +37,13 @@ const styles = StyleSheet.create({
         margin: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 10
+        paddingTop: 10,
     },
     quickBetRow: {
         flexDirection: 'row',
     },
     bigButton: {
-        height: "25%",
+        height: "20%",
     },
     bigText: {
         fontSize: 32,
@@ -54,7 +54,10 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         alignSelf: 'center',
         width: "100%",
-        borderRadius: 10
+        borderRadius: 10,
+    },
+    infoBoxText: {
+        fontSize: 25
     },
     // following styles for info page
     infoName: {
@@ -75,12 +78,28 @@ const PlayScreen = () => {
     const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
     const [ newBet, setNewBet ] = useState(minBet);
 
+    function searchForPlayer(name, players) {
+        for (var i=0; i < players.length; i++) {
+            if (players[i].name === name) {
+                return players[i];
+            }
+        }
+    }
+    const thisPlayer = searchForPlayer(tmpState.thisPlayer, tmpState.players);
+    const chipStack = thisPlayer.chips;
+    const chipsOut = thisPlayer.infront;
+
     return(
         <View style={{flex: 1, margin: 10, marginTop: 30}}>
             <View style={styles.infoBox}>
-                <Text>Chips: £{tmpState.playersChips}</Text>
-                <Text>Pot: £{tmpState.pot}</Text>
-                <Text>Blinds: £{tmpState.smallBlind}/£{tmpState.smallBlind*2}</Text>
+                <Text style={styles.infoBoxText}>Pot: £{tmpState.pot}</Text>
+                {chipsOut ? 
+                    <Text style={styles.infoBoxText}>
+                        Chips out: £{chipsOut}
+                    </Text>
+                :
+                    null
+                }
             </View>
             <View style={styles.buttonGroup}>
                 <StyledButton 
@@ -104,12 +123,12 @@ const PlayScreen = () => {
                         textStyle={styles.bigText}
                     />
                 }
-                <TouchableHighlight onPress={() => console.log("bet")} style={[styles.betButton, styles.bigButton]} underlayColor="#e6e6e6">
+                <TouchableHighlight onPress={() => console.log("bet")} style={[styles.betButton]} underlayColor="#e6e6e6">
                     <View style={{width: "100%", alignItems: 'center'}}>
                         <Text style={{fontSize: 18}}>Bet: £{newBet}</Text>
                         <Slider 
                             minimumValue={minBet}
-                            maximumValue={tmpState.playersChips}
+                            maximumValue={chipStack}
                             step={minBet}
                             onValueChange={(n) => setNewBet(n)}
                             value={newBet}
@@ -119,26 +138,26 @@ const PlayScreen = () => {
                             <StyledButton 
                                 buttonText = "Min"
                                 onPress={() => {setNewBet(minBet)}} 
-                                style={{width: "20%"}} 
-                                textStyle={{fontWeight: "bold"}}
+                                style={{width: "17%"}} 
+                                textStyle={{fontWeight: "bold", fontSize: 12}}
                             />
                             <StyledButton
                                 buttonText = "1/2 Pot"
-                                onPress={() => {setNewBet( tmpState.pot/2 <= tmpState.playersChips ? tmpState.pot/2 : tmpState.playersChips)}}
-                                style={{width: "20%"}}
-                                textStyle={{fontWeight: "bold"}}
+                                onPress={() => {setNewBet( tmpState.pot/2 <= chipStack ? tmpState.pot/2 : chipStack)}}
+                                style={{width: "17%"}}
+                                textStyle={{fontWeight: "bold", fontSize: 12}}
                             />
                             <StyledButton
                                 buttonText = "Pot"
-                                onPress={() => {setNewBet(tmpState.pot <= tmpState.playersChips ? tmpState.pot : tmpState.playersChips)}} 
-                                style={{width:"20%"}}
-                                textStyle={{fontWeight: "bold"}}
+                                onPress={() => {setNewBet(tmpState.pot <= chipStack ? tmpState.pot : chipStack)}} 
+                                style={{width:"17%"}}
+                                textStyle={{fontWeight: "bold", fontSize: 12}}
                             />
                             <StyledButton
                                 buttonText = "Max"
-                                onPress={() => {setNewBet(tmpState.playersChips)}} 
-                                style={{width:"20%"}}
-                                textStyle={{fontWeight: "bold"}}
+                                onPress={() => {setNewBet(chipStack)}} 
+                                style={{width:"17%"}}
+                                textStyle={{fontWeight: "bold", fontSize: 12}}
                             />
                         </View>
                     </View>
@@ -149,22 +168,27 @@ const PlayScreen = () => {
 }
 
 const PlayerStats = ({info}) => {
+    const fontWeight = tmpState.thisPlayer === info.name ? "bold" : "normal";
     return (
         <View style={{flex: 1, flexDirection: 'row'}}>
-            <Text style={styles.infoName}>{info.name}</Text>
-            <Text style={styles.infoChips}>£{info.chips}</Text>
+            <Text style={[styles.infoName, {fontWeight: fontWeight}]}>{info.name}</Text>
+            <Text style={[styles.infoChips, {fontWeight: fontWeight}]}>£{info.chips}</Text>
         </View>
     );
 }
 
 const InfoScreen = () => {
     return (
-        <View style={styles.infoPlayers}>
-            <Text style={[{textAlign:'center'},styles.bigText]}>Table Standings</Text>
-            <FlatList
-                data={tmpState.players.sort((a,b) => { return b.chips - a.chips })}
-                renderItem={ ({item}) => <PlayerStats info={item} /> }
-            />
+        <View>
+            <View style={styles.infoPlayers}>
+                <Text style={[{textAlign:'center', marginTop: 20, marginBottom: 20},styles.bigText]}>Table Standings</Text>
+                <FlatList
+                    data={tmpState.players.sort((a,b) => { return b.chips - a.chips })}
+                    renderItem={ ({item}) => <PlayerStats info={item} /> }
+                />
+            </View>
+            <gStyle.HorizontalRule/>
+        <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
         </View>
     );
 }
@@ -192,7 +216,7 @@ export const GameScreen = ({navigation}) => {
                     },
                     })}
                     tabBarOptions={{
-                    activeTintColor: 'tomato',
+                    activeTintColor: gStyle.primary,
                     inactiveTintColor: 'gray',
                     }}
             >
