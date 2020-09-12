@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, TouchableHighlight } from 'react-native';
+import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, KeyboardAvoidingView, Platform } from 'react-native';
 
 import * as gStyle from './globalStyle'; 
 import { StyledButton } from './StyledButton';
@@ -27,10 +27,13 @@ export const CreateForm = ({navigation}) => {
     const [useBlinds, setUseBlinds] = useState(true);
     const [startingBlinds, setStartingBlinds] = useState(0);
     const [blindInterval, setBlindInterval] = useState(15);
+    const [ displayName, setDisplayName ] = useState("");
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={{flex: 1}}>
+        <KeyboardAvoidingView style={{flex: 1}}
+            behavior={Platform.OS == "ios" ? "padding" : "height"}
+        >
             <View style={styles.fieldContainer}>
                 <TextInput
                     style={styles.text}
@@ -71,13 +74,21 @@ export const CreateForm = ({navigation}) => {
                     value={blindInterval}
                     style={{width: "75%"}}
                 />
+                <TextInput
+                    style={styles.text}
+                    placeholder="Display Name"
+                    spellCheck={false}
+                    value={displayName}
+                    onChangeText={(e) => setDisplayName(e)}
+                    underlineColorAndroid={gStyle.primary}
+                />
             </View>
             <StyledButton 
                 buttonText="Start Game"
-                onPress={() => navigation.navigate("Players")}
-                disabled={!startingChips}
+                onPress={() => navigation.navigate("Players", {method: "create"})}
+                disabled={!(startingChips && displayName !== "")}
             />
-        </View>
+        </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
     );
 }

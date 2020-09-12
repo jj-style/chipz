@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { View, TouchableOpacity, Text, TouchableHighlight } from "react-native";
+import { View, TouchableOpacity, Text, TouchableHighlight, FlatList } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 
 import * as gStyle from './globalStyle';
@@ -8,11 +8,11 @@ import { StyledButton } from './StyledButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const tmpData = [
-    { name: "Alan Turing" },
-    { name: "Charles Babbage" },
-    { name: "Dennis Ritchie" },
-    { name: "Ken Thompson" },
-    { name: "Donald Knuth" },
+    { name: "Alan Turing", key:"1" },
+    { name: "Charles Babbage", key:"2" },
+    { name: "Dennis Ritchie", key:"3" },
+    { name: "Ken Thompson", key:"4" },
+    { name: "Donald Knuth", key:"5" },
 ];
 
 export class PlayerList extends Component {
@@ -33,12 +33,13 @@ export class PlayerList extends Component {
     renderItem = ({ item, index, drag, isActive }) => {
         return (
             <View style={{ flex: 1, flexDirection: 'row', backgroundColor: isActive ? "#f2f2f2" : "#fff", alignContent: 'center', alignItems: 'center' }}>
-                <Text style={{ fontSize: 24, paddingLeft: 10 }}>{index + 1}</Text>
+                {/* <Text style={{ fontSize: 24, paddingLeft: 10 }}>{index + 1}</Text> */}
                 <TouchableOpacity
                     style={{
                         height: 100,
                         width: "75%",
-                        alignItems: "center",
+                        marginLeft: 10,
+                        alignItems: "flex-start",
                         justifyContent: "center"
                     }}
                     onLongPress={drag}
@@ -61,26 +62,67 @@ export class PlayerList extends Component {
         );
     };
 
+    renderItemNoMove = ({item, index}) => {
+        return (
+            <View style={{ flex: 1, flexDirection: 'row', backgroundColor: "#fff", alignContent: 'center', alignItems: 'center' }}>
+                {/* <Text style={{ fontSize: 24, paddingLeft: 10 }}>{index + 1}</Text> */}
+                <TouchableHighlight
+                    style={{
+                        height: 100,
+                        width: "75%",
+                        marginLeft: 10,
+                        alignItems: "flex-start",
+                        justifyContent: "center"
+                    }}
+                >
+                <Text
+                    style={{
+                        fontWeight: "bold",
+                        color: "black",
+                        fontSize: 32
+                    }}
+                >
+                    {item.name}
+                </Text>
+                </TouchableHighlight>
+                <Ionicons name={item.dealer ? 
+                    "ios-star" : "ios-star-outline"} size={25} 
+                />
+            </View>
+        );
+    }
+
     render() {
         const dataToRender = this.state.data.map((p, index) => ({
             ...p,
             dealer: this.state.dealer === p.name
         }));
+        const { method } = this.props.route.params;
+
         return (
             <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, alignSelf: 'center', textAlign: 'center', marginTop: 10, marginBottom: 10 }}>
                     Order players in the positions they are sitting and star the dealer.
                 </Text>
-                <DraggableFlatList
-                    data={dataToRender}
-                    renderItem={this.renderItem}
-                    keyExtractor={(item, index) => `draggable-item-${index}`}
-                    onDragEnd={({ data }) => this.setState({ data })}
-                />
-                <StyledButton
-                    buttonText="Begin Game"
-                    onPress={() => this.props.navigation.navigate("Game Screen")}
-                />
+                {method === "create" ?
+                <>
+                    <DraggableFlatList
+                        data={dataToRender}
+                        renderItem={this.renderItem}
+                        keyExtractor={(item, index) => `draggable-item-${index}`}
+                        onDragEnd={({ data }) => this.setState({ data })}
+                    />
+                    <StyledButton
+                        buttonText="Begin Game"
+                        onPress={() => this.props.navigation.navigate("Game Screen")}
+                    />
+                </>
+                :
+                    <FlatList
+                        data={dataToRender}
+                        renderItem={this.renderItemNoMove}
+                    />
+                }
             </View>
         );
     }
