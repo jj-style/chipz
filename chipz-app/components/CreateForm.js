@@ -1,5 +1,7 @@
 import React, {useState} from 'react';
-import { View, Keyboard, TouchableWithoutFeedback, Text, StyleSheet, TextInput, Switch, Slider, KeyboardAvoidingView, Platform } from 'react-native';
+import {    View, Keyboard, TouchableWithoutFeedback, Text, 
+            StyleSheet, TextInput, Switch, Slider, 
+            KeyboardAvoidingView, Platform } from 'react-native';
 
 import * as gStyle from './globalStyle'; 
 import { StyledButton } from './StyledButton';
