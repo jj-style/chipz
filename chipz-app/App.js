@@ -17,7 +17,7 @@ import { JoinForm } from './components/JoinForm';
 import { PlayerList } from './components/PlayerList';
 import { GameScreen } from './components/GameScreen';
 import { SplashScreen } from './components/SplashScreen';
-import { LeaveGameIcon } from './components/LeaveGameIcon';
+import { LeaveGameIcon, leaveGameAlert } from './components/LeaveGame';
 
 import { AuthContext } from './AuthContext';
 
@@ -165,7 +165,7 @@ const App = () => {
                         options={{ 
                             headerLeft: () => (
                                 <LeaveGameIcon
-                                    onPress={() => authContext.leaveGame()}
+                                    onPress={() => leaveGameAlert(()=>null, authContext.leaveGame)}
                                 />
                             )
                         }}

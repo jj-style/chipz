@@ -4,8 +4,10 @@ import { View, Text, StyleSheet, TouchableHighlight, Slider, FlatList } from 're
 import * as gStyle from './globalStyle';
 import { StyledButton } from './StyledButton';
 
-import { NavigationContainer, Ta } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+import { leaveGameAlert } from './LeaveGame';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -191,7 +193,7 @@ const InfoScreen = ({contextProvider}) => {
             <gStyle.HorizontalRule/>
         <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
         <View style={{flex: 1, justifyContent: 'flex-end'}}>
-            <StyledButton buttonText="Leave Game" onPress={leaveGame} style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
+            <StyledButton buttonText="Leave Game" onPress={() => leaveGameAlert(()=>null,leaveGame)} style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
         </View>
         </View>
     );

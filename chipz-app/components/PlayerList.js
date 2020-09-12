@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { View, TouchableOpacity, Text, TouchableHighlight, FlatList } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 
-import * as gStyle from './globalStyle';
 import { StyledButton } from './StyledButton';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
