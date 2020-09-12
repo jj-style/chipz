@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableHighlight, Slider, FlatList } from 'react-native';                
 
 import * as gStyle from './globalStyle';
@@ -177,9 +177,10 @@ const PlayerStats = ({info}) => {
     );
 }
 
-const InfoScreen = () => {
+const InfoScreen = ({contextProvider}) => {
+    const { leaveGame } = useContext(contextProvider);
     return (
-        <View>
+        <View style={{flex: 1}}>
             <View style={styles.infoPlayers}>
                 <Text style={[{textAlign:'center', marginTop: 20, marginBottom: 20},styles.bigText]}>Table Standings</Text>
                 <FlatList
@@ -189,14 +190,16 @@ const InfoScreen = () => {
             </View>
             <gStyle.HorizontalRule/>
         <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
+        <View style={{flex: 1, justifyContent: 'flex-end'}}>
+            <StyledButton buttonText="Leave Game" onPress={leaveGame} style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
+        </View>
         </View>
     );
 }
 
 const Tab = createBottomTabNavigator();
 
-export const GameScreen = ({navigation}) => {
-    //TODO: Reset navigation so can't go back
+export const GameScreen = ({navigation, contextProvider}) => {
 
     return (
         <NavigationContainer independent={true}>
@@ -221,7 +224,9 @@ export const GameScreen = ({navigation}) => {
                     }}
             >
                 <Tab.Screen name="Play" component={PlayScreen}/>
-                <Tab.Screen name="Info" component={InfoScreen}/>
+                <Tab.Screen name="Info">
+                    {props => <InfoScreen {...props} contextProvider={contextProvider}/>}
+                </Tab.Screen>
             </Tab.Navigator>
         </NavigationContainer>
     );

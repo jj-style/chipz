@@ -3,11 +3,14 @@ import { View, StyleSheet, Image } from 'react-native';
 
 import { StyledButton } from './StyledButton';
 
+import CasinoChip from '../assets/casino_chip.png';
+
 const styles = StyleSheet.create({
     logo: {
-        width: "75%",
-        height: "75%",
-        alignSelf: 'center'
+        width: 300,
+        height: 400,
+        alignSelf: 'center',
+        marginTop: "20%"
     },
 });
 
@@ -15,7 +18,7 @@ export const HomeScreen = ({navigation}) => {
     return (
         <View>
             <View>
-                <Image style={styles.logo} source={require("../assets/splash.png")} />
+                <Image resizeMode="contain" style={styles.logo} source={CasinoChip} />
                 <StyledButton
                     buttonText="Create Game"
                     onPress={() => navigation.navigate("Create Game")}

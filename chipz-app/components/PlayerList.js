@@ -7,6 +7,8 @@ import { StyledButton } from './StyledButton';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+import { AuthContext } from '../AuthContext';
+
 const tmpData = [
     { name: "Alan Turing", key:"1" },
     { name: "Charles Babbage", key:"2" },
@@ -16,6 +18,8 @@ const tmpData = [
 ];
 
 export class PlayerList extends Component {
+    static contextType = AuthContext;
+
     constructor(props) {
         super();
         this.state = {
@@ -97,7 +101,8 @@ export class PlayerList extends Component {
             ...p,
             dealer: this.state.dealer === p.name
         }));
-        const { method } = this.props.route.params;
+        // const { method } = this.props.route.params;
+        const { method } = this.props;
 
         return (
             <View style={{ flex: 1 }}>
@@ -114,7 +119,8 @@ export class PlayerList extends Component {
                     />
                     <StyledButton
                         buttonText="Begin Game"
-                        onPress={() => this.props.navigation.navigate("Game Screen")}
+                        // onPress={() => this.props.navigation.navigate("Game Screen")}
+                        onPress={this.context.startGame}
                     />
                 </>
                 :
