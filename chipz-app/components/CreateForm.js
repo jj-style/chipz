@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useContext} from 'react';
 import {    View, Keyboard, TouchableWithoutFeedback, Text, 
             StyleSheet, TextInput, Switch, Slider, 
             KeyboardAvoidingView, Platform } from 'react-native';
@@ -23,13 +23,15 @@ const styles = StyleSheet.create({
     },
 });
 
-export const CreateForm = ({navigation}) => {
+export const CreateForm = ({navigation, contextProvider}) => {
 
     const [startingChips, setStartingChips] = useState(null);
     const [useBlinds, setUseBlinds] = useState(true);
     const [startingBlinds, setStartingBlinds] = useState(0);
     const [blindInterval, setBlindInterval] = useState(15);
     const [ displayName, setDisplayName ] = useState("");
+
+    const { createGame } = useContext(contextProvider);
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -87,7 +89,8 @@ export const CreateForm = ({navigation}) => {
             </View>
             <StyledButton 
                 buttonText="Start Game"
-                onPress={() => navigation.navigate("Players", {method: "create"})}
+                // onPress={() => navigation.navigate("Players", {method: "create"})}
+                onPress={() => createGame({ startingChips, useBlinds, startingBlinds, blindInterval, displayName })}
                 disabled={!(startingChips && displayName !== "")}
             />
         </KeyboardAvoidingView>
