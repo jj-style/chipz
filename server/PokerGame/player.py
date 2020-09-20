@@ -68,3 +68,9 @@ class PlayerList:
             if self[i]._name == item:
                 return i
         raise ValueError(f"{item} is not in PlayerList")
+
+    def remove(self, item):
+        self._players = [p for p in self._players if p.display_name != item]
+
+    def add(self, item):
+        self._players.append(item)

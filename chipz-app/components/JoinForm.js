@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {    View, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, 
             StyleSheet, TextInput, Platform, Modal, Text, TouchableHighlight, Alert } from 'react-native';
 import * as gStyle from './globalStyle';
@@ -21,21 +21,25 @@ const styles = StyleSheet.create({
     },
 });
 
-export const JoinForm = ({navigation, contextProvider}) => {
+export const JoinForm = ({navigation, contextProvider, errorMsg, clearErrorMsg}) => {
     
     const [gameCode, setGameCode] = useState("");
     const [displayName, setDisplayName] = useState("");
-    const [alertText, setAlertText] = useState("");
+    // const [alertText, setAlertText] = useState("");
     
     const { joinGame } = useContext(contextProvider);
 
     const showAlert = () => Alert.alert(
         "Error",
-        alertText,
+        errorMsg,
         [
-          { text: "OK", onPress: () => console.log("OK Pressed") }
+          { text: "OK", onPress: clearErrorMsg }
         ],
     );
+
+    useEffect(() => {
+        errorMsg !== "" ? showAlert() : null;
+    },[errorMsg]);
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

@@ -1,10 +1,10 @@
 from abc import ABC
 from datetime import datetime, timedelta
-from player import PlayerList
+from .player import PlayerList, Player
 
 class PokerGame(ABC):
-    def __init__(self, players, starting_chips):
-        self._players = PlayerList(players)
+    def __init__(self, starting_chips):
+        self._players = PlayerList()
         self._starting_chips = starting_chips
         self._started_at = None
         self._dealer = None
@@ -20,13 +20,27 @@ class PokerGame(ABC):
     def dealer(self, name):
         self._dealer = self._players.index(name)
 
+    @property
+    def starting_chips(self):
+        return self._starting_chips
+
+    @property
+    def players(self):
+        return self._players
+
+    def add_player(self, player_name):
+        self._players.add(Player(player_name, self._starting_chips))
+
+    def remove_player(self, player_name):
+        self._players.remove(player_name)
+
 class NoBlindsPokerGame(PokerGame):
-    def __init__(self, players, starting_chips):
-        super().__init__(players, starting_chips)
+    def __init__(self, starting_chips):
+        super().__init__(starting_chips)
 
 class BlindsPokerGame(PokerGame):
-    def __init__(self, players, starting_chips, starting_blinds, blind_interval):
-        super().__init__(players, starting_chips)
+    def __init__(self, starting_chips, starting_blinds, blind_interval):
+        super().__init__(starting_chips)
         self._small_blind = starting_blinds
         self._blind_interval = blind_interval
         self._blinds_up_at = None

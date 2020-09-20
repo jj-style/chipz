@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler'; // MUST BE AT TOP
 
 // Core react imports
-import React, { createContext, useEffect, useReducer, useMemo } from 'react';
+import React, { createContext, useEffect, useReducer, useMemo, useState } from 'react';
 
 // React native imports
 import AsyncStorage from '@react-native-community/async-storage';
@@ -18,6 +18,8 @@ import { PlayerList } from './components/PlayerList';
 import { GameScreen } from './components/GameScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { LeaveGameIcon, leaveGameAlert } from './components/LeaveGame';
+import Constants from "expo-constants";
+const { manifest } = Constants;
 
 import { AuthContext } from './AuthContext';
 
@@ -25,7 +27,22 @@ import * as gStyle from './components/globalStyle.js';
 
 const Stack = createStackNavigator();
 
+// let api;
+// if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+//     // dev code
+//     api = "http://127.0.0.1:5000/";
+// } else {
+//     // production code
+//     api = "production-api.com";
+// }
+const api = (typeof manifest.packagerOpts === `object`) && manifest.packagerOpts.dev
+  ? "http://" + manifest.debuggerHost.split(`:`).shift().concat(`:5000`)
+  : `api.example.com`;
+
 const App = () => {
+
+    const [joinErrorMsg, setJoinErrorMsg] = useState("");
+
     const [state, dispatch] = useReducer((prevState, action) => {
         switch (action.type) {
             case 'RESTORE_TOKEN':
@@ -98,13 +115,26 @@ const App = () => {
         createGame: async data => {
             const { startingChips, useBlinds, startingBlinds, blindInterval, displayName } = data;
             // get game code from server here passing this data to create game
-            const token = {gameCode: 'abc', displayName, gameStarted: false, host: true};
-            storeUserToken(JSON.stringify(token))
-            .then(() => {
-                console.log("stored user token", token);
-                dispatch({ type: 'JOIN_GAME', token: token });
+
+            let gameCode;
+            fetch(`${api}/game`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }
+            ).then(res => res.json())
+            .then(data => {
+                gameCode = data.room;
+                const token = {gameCode: gameCode, displayName, gameStarted: false, host: true};
+                storeUserToken(JSON.stringify(token))
+                .then(() => {
+                    console.log("stored user token", token);
+                    dispatch({ type: 'JOIN_GAME', token: token });
+                })
+                .catch((e) => console.log(e));
             })
-            .catch((e) => console.log(e));
+            .catch(e => console.log("something went wrong creating a game :("));
 
         },
         joinGame: async data => {
@@ -113,11 +143,30 @@ const App = () => {
         // After getting token, we need to persist the token using `AsyncStorage`
         // In the example, we'll use a dummy token
         
-        // const {gameCode, displayName} = data;
-        const token = {...data, gameStarted:false, host:false};
-        storeUserToken(JSON.stringify(token))
-        .then(() => dispatch({ type: 'JOIN_GAME', token: token }))
-        .catch((e) => console.log(e));
+        const {gameCode, displayName} = data;
+        fetch(`${api}/game/${gameCode}`,
+            {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }
+        ).then(res => {
+            if (res.status >=400)
+                throw res.json()
+            return res.json();
+        })
+        .then(newdata => {
+            const token = {...data, gameStarted:false, host:false};
+            storeUserToken(JSON.stringify(token))
+            .then(() => dispatch({ type: 'JOIN_GAME', token: token }))
+            .catch((e) => console.log(e));
+        })
+        .catch((error) => {
+            error.then((e) => {
+                console.log(e);
+                setJoinErrorMsg(e);
+            })
+        })
         },
         startGame: () => {
             storeUserToken(JSON.stringify({...(state.userToken), gameStarted: true}))
@@ -155,7 +204,7 @@ const App = () => {
                         {props => <CreateForm {...props} contextProvider={AuthContext} /> }
                     </Stack.Screen>
                     <Stack.Screen name="Join Game">
-                        {props => <JoinForm {...props} contextProvider={AuthContext} /> }
+                        {props => <JoinForm {...props} contextProvider={AuthContext} errorMsg={joinErrorMsg} clearErrorMsg={() => setJoinErrorMsg("")} /> }
                     </Stack.Screen>
                 </>
                 :
