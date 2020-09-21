@@ -89,7 +89,30 @@ const App = () => {
             } catch(e) {
                 token = null;
             }
-            dispatch({type: 'RESTORE_TOKEN', token: token});
+            // retrieved token from users phone but must check if game still exists
+            if (token) {
+                fetch(`${api}/game/${token.gameCode}`,
+                    {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                    }
+                )
+                .then(res => {
+                    if (!res.ok) {
+                        throw res.json();
+                    } return res.json();
+                }).then(data => {
+                    console.log("game found can restore")
+                    dispatch({type: 'RESTORE_TOKEN', token: token});
+                }).catch((error) => {
+                    error.then(e => {
+                        console.log(e.message);
+                        dispatch({type: 'RESTORE_TOKEN', token: null});
+                    })
+                });
+            } else {
+                dispatch({type: 'RESTORE_TOKEN', token: null});
+            }
         };
         asyncTokenLoad();
     }, []);

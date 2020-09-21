@@ -58,7 +58,10 @@ def game(room=None):
     else:
         print("made request to room: " + room)
         if request.method == "GET":
-            return jsonify({"game data for game": room}) # todo return data about a specific game
+            if GAMES.get(room):
+                return json.dumps(GAMES[room], default=lambda x: x.__dict__)
+            else:
+                return jsonify(message="Saved game not found"), 404
         else:
             game_data = request.get_json()
             print(game_data)
