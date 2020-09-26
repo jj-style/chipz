@@ -6,34 +6,52 @@ import { StyledButton } from './StyledButton';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { AuthContext } from '../AuthContext';
+import { AppContext } from '../AppContext';
+
+import {websocket} from '../socket';
 
 const tmpData = [
-    { name: "Alan Turing", key:"1" },
-    { name: "Charles Babbage", key:"2" },
-    { name: "Dennis Ritchie", key:"3" },
-    { name: "Ken Thompson", key:"4" },
-    { name: "Donald Knuth", key:"5" },
+    { _name: "Alan Turing", _dealer:true, key:"1" },
+    { _name: "Charles Babbage", _dealer:false, key:"2" },
+    { _name: "Dennis Ritchie", _dealer:false, key:"3" },
+    { _name: "Ken Thompson", _dealer:false, key:"4" },
+    { _name: "Donald Knuth", _dealer:false, key:"5" },
 ];
 
 export class PlayerList extends Component {
-    static contextType = AuthContext;
+    static contextType = AppContext;
 
     constructor(props) {
-        super();
+        super(props);
         this.state = {
             data: tmpData,
-            dealer: "Alan Turing"
         };
+
+        websocket.on("GETPLAYERINFO", newdata => {
+            console.log("get player info callback");
+            console.log(JSON.parse(newdata));
+            this.setState({ data: JSON.parse(newdata)._players})
+        });
+    }
+
+    componentDidMount() {
+        websocket.emit("GETPLAYERLISTINFO", this.props.gameCode);
     }
 
     toggleDealer(name) {
-        if (name !== this.state.dealer) {
-            this.setState({dealer: name});
+        let currentDealer = this.state.data.find(obj => obj._dealer == true);
+        let newDealer = this.state.data.find(obj => obj._name === name);
+    
+        if (currentDealer !== newDealer) {
+            var currrentStateData = this.state.data;
+            currrentStateData[currrentStateData.findIndex(el => el._name === currentDealer._name)] = {...currentDealer, _dealer: false};
+            currrentStateData[currrentStateData.findIndex(el => el._name === newDealer._name)] = {...newDealer, _dealer: true};
+            this.setState({data: currrentStateData});
         }
     }
 
     renderItem = ({ item, index, drag, isActive }) => {
+        
         return (
             <View style={{ flex: 1, flexDirection: 'row', backgroundColor: isActive ? "#f2f2f2" : "#fff", alignContent: 'center', alignItems: 'center' }}>
                 {/* <Text style={{ fontSize: 24, paddingLeft: 10 }}>{index + 1}</Text> */}
@@ -54,12 +72,12 @@ export class PlayerList extends Component {
                             fontSize: 32
                         }}
                     >
-                        {item.name}
+                        {item._name}
                     </Text>
                 </TouchableOpacity>
-                <Ionicons name={item.dealer ? 
+                <Ionicons name={item._dealer ? 
                 "ios-star" : "ios-star-outline"} size={25} 
-                onPress={() => {this.toggleDealer(item.name)}}
+                onPress={() => {this.toggleDealer(item._name)}}
                 />
             </View>
         );
@@ -85,10 +103,10 @@ export class PlayerList extends Component {
                         fontSize: 32
                     }}
                 >
-                    {item.name}
+                    {item._name}
                 </Text>
                 </TouchableHighlight>
-                <Ionicons name={item.dealer ? 
+                <Ionicons name={item._dealer ? 
                     "ios-star" : "ios-star-outline"} size={25} 
                 />
             </View>
@@ -96,11 +114,6 @@ export class PlayerList extends Component {
     }
 
     render() {
-        const dataToRender = this.state.data.map((p, index) => ({
-            ...p,
-            dealer: this.state.dealer === p.name
-        }));
-        // const { method } = this.props.route.params;
         const { method } = this.props;
 
         return (
@@ -111,7 +124,7 @@ export class PlayerList extends Component {
                 {method === "create" ?
                 <>
                     <DraggableFlatList
-                        data={dataToRender}
+                        data={this.state.data}
                         renderItem={this.renderItem}
                         keyExtractor={(item, index) => `draggable-item-${index}`}
                         onDragEnd={({ data }) => this.setState({ data })}
@@ -124,7 +137,7 @@ export class PlayerList extends Component {
                 </>
                 :
                     <FlatList
-                        data={dataToRender}
+                        data={this.state.data}
                         renderItem={this.renderItemNoMove}
                     />
                 }

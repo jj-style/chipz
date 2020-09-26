@@ -1,11 +1,12 @@
 from itertools import chain
 
 class Player:
-    def __init__(self, name, chips):
+    def __init__(self, name, chips, dealer=False):
         self._name = name
         self._chips = chips
         self._last_move = None
         self._chip_in_play = 0
+        self._dealer = dealer
 
     def __eq__(self, rhs):
         if not isinstance(rhs, Player):
@@ -28,6 +29,10 @@ class Player:
     @move.setter
     def move(self, value):
         self._last_move = value
+
+    @property
+    def dealer(self):
+        return self._dealer
 
     def __str__(self):
         return self._name
@@ -74,3 +79,7 @@ class PlayerList:
 
     def add(self, item):
         self._players.append(item)
+
+    @property
+    def players(self):
+        return self._players

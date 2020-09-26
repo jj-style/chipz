@@ -21,9 +21,11 @@ import { LeaveGameIcon, leaveGameAlert } from './components/LeaveGame';
 import Constants from "expo-constants";
 const { manifest } = Constants;
 
-import { AuthContext } from './AuthContext';
+import { AppContext } from './AppContext';
 
 import * as gStyle from './components/globalStyle.js';
+
+import { websocket } from './socket';
 
 const Stack = createStackNavigator();
 
@@ -134,7 +136,7 @@ const App = () => {
         }
     }
 
-    const authContext = useMemo(() => ({
+    const appContext = useMemo(() => ({
         createGame: async data => {
             const { startingChips, useBlinds, startingBlinds, blindInterval, displayName } = data;
             // get game code from server here passing this data to create game
@@ -153,6 +155,7 @@ const App = () => {
                 storeUserToken(JSON.stringify(token))
                 .then(() => {
                     console.log("stored user token", token);
+                    websocket.emit("join", {"name":displayName, "gameCode":gameCode});
                     dispatch({ type: 'JOIN_GAME', token: token });
                 })
                 .catch((e) => console.log(e));
@@ -181,7 +184,10 @@ const App = () => {
         .then(newdata => {
             const token = {...data, gameStarted:false, host:false};
             storeUserToken(JSON.stringify(token))
-            .then(() => dispatch({ type: 'JOIN_GAME', token: token }))
+            .then(() => {
+                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
+                dispatch({ type: 'JOIN_GAME', token: token });
+            })
             .catch((e) => console.log(e));
         })
         .catch((error) => {
@@ -205,9 +211,9 @@ const App = () => {
 
     if (state.loading)
         return <SplashScreen />;
-
+    
     return (
-        <AuthContext.Provider value={authContext}>
+        <AppContext.Provider value={appContext}>
         <NavigationContainer>
             <Stack.Navigator 
                     screenOptions={{
@@ -224,10 +230,10 @@ const App = () => {
                 <>
                     <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Create Game">
-                        {props => <CreateForm {...props} contextProvider={AuthContext} /> }
+                        {props => <CreateForm {...props} contextProvider={AppContext} /> }
                     </Stack.Screen>
                     <Stack.Screen name="Join Game">
-                        {props => <JoinForm {...props} contextProvider={AuthContext} errorMsg={joinErrorMsg} clearErrorMsg={() => setJoinErrorMsg("")} /> }
+                        {props => <JoinForm {...props} contextProvider={AppContext} errorMsg={joinErrorMsg} clearErrorMsg={() => setJoinErrorMsg("")} /> }
                     </Stack.Screen>
                 </>
                 :
@@ -237,23 +243,23 @@ const App = () => {
                         options={{ 
                             headerLeft: () => (
                                 <LeaveGameIcon
-                                    onPress={() => leaveGameAlert(()=>null, authContext.leaveGame)}
+                                    onPress={() => leaveGameAlert(()=>null, appContext.leaveGame)}
                                 />
                             )
                         }}
                     >
-                        {props => <PlayerList {...props} contextProvider={AuthContext} method={state.userToken.host?"create":"join"} /> }
+                        {props => <PlayerList {...props} contextProvider={AppContext} method={state.userToken.host?"create":"join"} gameCode={state.userToken.gameCode}/> }
                     </Stack.Screen>
                     :
                     <Stack.Screen name="Game Screen"options={{ headerShown: false }}>
-                        {props => <GameScreen {...props} contextProvider={AuthContext} /> }
+                        {props => <GameScreen {...props} contextProvider={AppContext} /> }
                     </Stack.Screen>
                     }
                 </>
             }
             </Stack.Navigator>
         </NavigationContainer>
-        </AuthContext.Provider>
+        </AppContext.Provider>
     );
 }
 

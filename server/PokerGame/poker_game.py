@@ -7,18 +7,9 @@ class PokerGame(ABC):
         self._players = PlayerList()
         self._starting_chips = starting_chips
         self._started_at = None
-        self._dealer = None
 
     def start_game(self):
         self._started = datetime.now()
-
-    @property
-    def dealer(self):
-        return self._dealer
-
-    @dealer.setter
-    def dealer(self, name):
-        self._dealer = self._players.index(name)
 
     @property
     def starting_chips(self):
@@ -28,8 +19,8 @@ class PokerGame(ABC):
     def players(self):
         return self._players
 
-    def add_player(self, player_name):
-        self._players.add(Player(player_name, self._starting_chips))
+    def add_player(self, player_name, is_dealer):
+        self._players.add(Player(player_name, self._starting_chips, dealer=is_dealer))
 
     def remove_player(self, player_name):
         self._players.remove(player_name)
