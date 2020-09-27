@@ -77,7 +77,10 @@ export class PlayerList extends Component {
                 </TouchableOpacity>
                 <Ionicons name={item._dealer ? 
                 "ios-star" : "ios-star-outline"} size={25} 
-                onPress={() => {this.toggleDealer(item._name)}}
+                onPress={() => {
+                    this.toggleDealer(item._name);
+                    websocket.emit("SETPLAYERLISTINFO", this.props.gameCode, this.state.data);
+                }}
                 />
             </View>
         );
@@ -119,7 +122,10 @@ export class PlayerList extends Component {
         return (
             <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, alignSelf: 'center', textAlign: 'center', marginTop: 10, marginBottom: 10 }}>
-                    Order players in the positions they are sitting and star the dealer.
+                    {method === "create" ?
+                        "Order players in the positions they are sitting and star the dealer."
+                    : "Waiting for host to start the game"
+                    }
                 </Text>
                 {method === "create" ?
                 <>
@@ -127,7 +133,10 @@ export class PlayerList extends Component {
                         data={this.state.data}
                         renderItem={this.renderItem}
                         keyExtractor={(item, index) => `draggable-item-${index}`}
-                        onDragEnd={({ data }) => this.setState({ data })}
+                        onDragEnd={({ data }) => {
+                            this.setState({ data });
+                            websocket.emit("SETPLAYERLISTINFO", this.props.gameCode, this.state.data);
+                        }}
                     />
                     <StyledButton
                         buttonText="Begin Game"
@@ -139,6 +148,7 @@ export class PlayerList extends Component {
                     <FlatList
                         data={this.state.data}
                         renderItem={this.renderItemNoMove}
+                        keyExtractor={(item, index) => `draggable-item-${index}`}
                     />
                 }
             </View>

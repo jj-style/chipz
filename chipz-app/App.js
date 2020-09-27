@@ -245,7 +245,8 @@ const App = () => {
                                 <LeaveGameIcon
                                     onPress={() => leaveGameAlert(()=>null, appContext.leaveGame)}
                                 />
-                            )
+                            ),
+                            title: `Game ${state.userToken.gameCode}`
                         }}
                     >
                         {props => <PlayerList {...props} contextProvider={AppContext} method={state.userToken.host?"create":"join"} gameCode={state.userToken.gameCode}/> }

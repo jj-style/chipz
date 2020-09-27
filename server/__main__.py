@@ -5,7 +5,7 @@ from flask_socketio import SocketIO, send, emit, join_room, leave_room
 import random, json
 
 from PokerGame.poker_game import NoBlindsPokerGame, BlindsPokerGame
-from PokerGame.player import Player
+from PokerGame.player import Player, PlayerList
 
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -29,7 +29,7 @@ def add_player_to_game(player_name, game_code, dealer=False):
         if player_name in game.players:
             raise ValueError(f"{player_name} already in the game")
         game.add_player(player_name, dealer)
-    except:
+    except KeyError:
         raise ValueError(f"Game {game_code} could not be found")
 
 @app.route("/")
@@ -91,6 +91,17 @@ def on_leave(data):
 @socketio.on("GETPLAYERLISTINFO")
 def get_player_list_info(game_code):
     emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+
+@socketio.on("SETPLAYERLISTINFO")
+def set_player_list_info(game_code, new_player_list_info):
+    g = GAMES[game_code]
+    new_players = PlayerList()
+    for p in new_player_list_info:
+        new_p = Player(p['_name'],p['_chips'],p['_dealer'])
+        new_players.add(new_p)
+    g.players = new_players
+    emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+
 
 if __name__ == "__main__":
     # app.run(host='0.0.0.0', debug=True)

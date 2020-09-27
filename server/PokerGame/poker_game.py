@@ -19,6 +19,10 @@ class PokerGame(ABC):
     def players(self):
         return self._players
 
+    @players.setter
+    def players(self, new_player_list):
+        self._players = new_player_list
+
     def add_player(self, player_name, is_dealer):
         self._players.add(Player(player_name, self._starting_chips, dealer=is_dealer))
 
