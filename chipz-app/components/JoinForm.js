@@ -54,6 +54,9 @@ export const JoinForm = ({navigation, contextProvider, errorMsg, clearErrorMsg})
                         value={gameCode}
                         onChangeText={(e) => setGameCode(e)}
                         underlineColorAndroid={gStyle.primary}
+                        autoCapitalize="characters"
+                        autoCompleteType="off"
+                        autoCorrect={false}
                     />
                     <TextInput
                         style={styles.text}

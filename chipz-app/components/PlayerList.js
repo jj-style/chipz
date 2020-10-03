@@ -29,7 +29,6 @@ export class PlayerList extends Component {
 
         websocket.on("GETPLAYERINFO", newdata => {
             console.log("get player info callback");
-            console.log(JSON.parse(newdata));
             this.setState({ data: JSON.parse(newdata)._players})
         });
     }
