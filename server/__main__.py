@@ -69,7 +69,9 @@ def game(room=None):
         print("made request to room: " + room)
         if request.method == "GET":
             if GAMES.get(room):
-                return json.dumps(GAMES[room], default=lambda x: x.__dict__)
+                # return json.dumps({**GAMES[room], **{"_pot":GAMES[room].pot}}, default=lambda x: x.__dict__)
+                full_dict = {**GAMES[room].__dict__, **{"_pot":GAMES[room].pot}}
+                return json.dumps(full_dict, default=lambda x: x.__dict__)
             else:
                 return jsonify(message="Saved game not found"), 404
         elif request.method == "POST":

@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const PlayScreen = () => {
+const PlayScreen = ({gameData, contextProvider, token}) => {
     const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
     const [ newBet, setNewBet ] = useState(minBet);
 
@@ -97,14 +97,7 @@ const PlayScreen = () => {
     return(
         <View style={{flex: 1, margin: 10, marginTop: 30}}>
             <View style={styles.infoBox}>
-                <Text style={styles.infoBoxText}>Pot: £{tmpState.pot}</Text>
-                {chipsOut ? 
-                    <Text style={styles.infoBoxText}>
-                        Chips out: £{chipsOut}
-                    </Text>
-                :
-                    null
-                }
+                <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
             </View>
             <View style={styles.buttonGroup}>
                 <StyledButton 
@@ -132,9 +125,9 @@ const PlayScreen = () => {
                     <View style={{width: "100%", alignItems: 'center'}}>
                         <Text style={{fontSize: 18}}>Bet: £{newBet}</Text>
                         <Slider 
-                            minimumValue={minBet}
-                            maximumValue={chipStack}
-                            step={minBet}
+                            minimumValue={minBet}    // TODO: will need to recalculate this
+                            maximumValue={chipStack} // TODO: max will be find the player then their stack
+                            step={minBet}            // TODO: and this
                             onValueChange={(n) => setNewBet(n)}
                             value={newBet}
                             style={{width: "75%", marginTop: 10, marginBottom: 10}}
@@ -172,29 +165,32 @@ const PlayScreen = () => {
     );
 }
 
-const PlayerStats = ({info}) => {
-    const fontWeight = tmpState.thisPlayer === info.name ? "bold" : "normal";
+const PlayerStats = ({info, thisPlayer}) => {
+    const fontWeight = thisPlayer === info._name ? "bold" : "normal";
     return (
         <View style={{flex: 1, flexDirection: 'row'}}>
-            <Text style={[styles.infoName, {fontWeight: fontWeight}]}>{info.name}</Text>
-            <Text style={[styles.infoChips, {fontWeight: fontWeight}]}>£{info.chips}</Text>
+            <Text style={[styles.infoName, {fontWeight: fontWeight}]}>{info._name}</Text>
+            <Text style={[styles.infoChips, {fontWeight: fontWeight}]}>£{info._chips}</Text>
         </View>
     );
 }
 
-const InfoScreen = ({contextProvider, token}) => {
+const InfoScreen = ({contextProvider, token, gameData}) => {
     const { leaveGame } = useContext(contextProvider);
     return (
         <View style={{flex: 1}}>
             <View style={styles.infoPlayers}>
                 <Text style={[{textAlign:'center', marginTop: 20, marginBottom: 20},styles.bigText]}>Table Standings</Text>
                 <FlatList
-                    data={tmpState.players.sort((a,b) => { return b.chips - a.chips })}
-                    renderItem={ ({item}) => <PlayerStats info={item} /> }
+                    data={gameData._players._players.sort((a,b) => { return b._chips - a._chips })}
+                    renderItem={ ({item}) => <PlayerStats info={item} thisPlayer={token.displayName}/> }
+                    keyExtractor={(item, index) => `player-info-${index}`}
                 />
             </View>
             <gStyle.HorizontalRule/>
-        <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
+        <Text style={[{textAlign: 'center'},styles.bigText]}>
+            Blinds: £{gameData._small_blind}/{gameData._small_blind*2}
+        </Text>
         <View style={{flex: 1, justifyContent: 'flex-end'}}>
             <StyledButton buttonText="Leave Game" 
                 onPress={
@@ -232,7 +228,6 @@ export const GameScreen = ({navigation, contextProvider, token}) => {
             }).then(data => {
                 console.log("game data found");
                 setLoading(false);
-                console.log(data);
                 setGameData(data);
             }).catch((error) => {
                 error.then(e => {
@@ -266,9 +261,11 @@ export const GameScreen = ({navigation, contextProvider, token}) => {
             {loading?
                 <Tab.Screen name="Loading" component={SplashScreen} />
                 :<>
-                    <Tab.Screen name="Play" component={PlayScreen}/>
+                    <Tab.Screen name="Play">
+                        {props => <PlayScreen {...props} contextProvider={contextProvider} token={token} gameData={gameData}/>}
+                    </Tab.Screen>
                     <Tab.Screen name="Info">
-                        {props => <InfoScreen {...props} contextProvider={contextProvider} token={token}/>}
+                        {props => <InfoScreen {...props} contextProvider={contextProvider} token={token} gameData={gameData}/>}
                     </Tab.Screen>
                 </>
             }

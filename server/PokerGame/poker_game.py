@@ -23,6 +23,10 @@ class PokerGame(ABC):
     def players(self, new_player_list):
         self._players = new_player_list
 
+    @property
+    def pot(self):
+        return sum(player.chips_played for player in self.players)
+
     def add_player(self, player_name, is_dealer):
         self._players.add(Player(player_name, self._starting_chips, dealer=is_dealer))
 

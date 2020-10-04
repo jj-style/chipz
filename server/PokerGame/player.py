@@ -5,7 +5,7 @@ class Player:
         self._name = name
         self._chips = chips
         self._last_move = None
-        self._chip_in_play = 0
+        self._chips_played = 0
         self._dealer = dealer
 
     def __eq__(self, rhs):
@@ -37,6 +37,10 @@ class Player:
     @dealer.setter
     def dealer(self, new_status):
         self._dealer = new_status
+
+    @property
+    def chips_played(self):
+        return self._chips_played
 
     def __str__(self):
         return self._name
