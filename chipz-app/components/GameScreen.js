@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableHighlight, Slider, FlatList } from 'react-native';                
 
 import * as gStyle from './globalStyle';
@@ -9,7 +9,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { leaveGameAlert } from './LeaveGame';
 
+import { api } from '../api';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SplashScreen } from './SplashScreen';
 
 const tmpState = {
     pot: 20,
@@ -179,7 +182,7 @@ const PlayerStats = ({info}) => {
     );
 }
 
-const InfoScreen = ({contextProvider}) => {
+const InfoScreen = ({contextProvider, token}) => {
     const { leaveGame } = useContext(contextProvider);
     return (
         <View style={{flex: 1}}>
@@ -193,7 +196,16 @@ const InfoScreen = ({contextProvider}) => {
             <gStyle.HorizontalRule/>
         <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
         <View style={{flex: 1, justifyContent: 'flex-end'}}>
-            <StyledButton buttonText="Leave Game" onPress={() => leaveGameAlert(()=>null,leaveGame)} style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
+            <StyledButton buttonText="Leave Game" 
+                onPress={
+                    () => leaveGameAlert(()=>null,
+                    () => leaveGame(
+                        {   "gameCode":     token.gameCode,
+                            "displayName":  token.displayName
+                        }
+                    ))
+                } 
+                style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
         </View>
         </View>
     );
@@ -201,7 +213,33 @@ const InfoScreen = ({contextProvider}) => {
 
 const Tab = createBottomTabNavigator();
 
-export const GameScreen = ({navigation, contextProvider}) => {
+export const GameScreen = ({navigation, contextProvider, token}) => {
+
+    const [gameData, setGameData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch(`${api}/game/${token.gameCode}`,
+                {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            )
+            .then(res => {
+                if (!res.ok) {
+                    throw res.json();
+                } return res.json();
+            }).then(data => {
+                console.log("game data found");
+                setLoading(false);
+                console.log(data);
+                setGameData(data);
+            }).catch((error) => {
+                error.then(e => {
+                    console.log(e.message);
+                })
+        });
+    },[])
 
     return (
         <NavigationContainer independent={true}>
@@ -225,10 +263,15 @@ export const GameScreen = ({navigation, contextProvider}) => {
                     inactiveTintColor: 'gray',
                     }}
             >
-                <Tab.Screen name="Play" component={PlayScreen}/>
-                <Tab.Screen name="Info">
-                    {props => <InfoScreen {...props} contextProvider={contextProvider}/>}
-                </Tab.Screen>
+            {loading?
+                <Tab.Screen name="Loading" component={SplashScreen} />
+                :<>
+                    <Tab.Screen name="Play" component={PlayScreen}/>
+                    <Tab.Screen name="Info">
+                        {props => <InfoScreen {...props} contextProvider={contextProvider} token={token}/>}
+                    </Tab.Screen>
+                </>
+            }
             </Tab.Navigator>
         </NavigationContainer>
     );

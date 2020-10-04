@@ -140,7 +140,8 @@ export class PlayerList extends Component {
                     <StyledButton
                         buttonText="Begin Game"
                         // onPress={() => this.props.navigation.navigate("Game Screen")}
-                        onPress={this.context.startGame}
+                        // onPress={this.context.startGame}
+                        onPress={() => websocket.emit("STARTGAME", this.props.gameCode)}
                     />
                 </>
                 :

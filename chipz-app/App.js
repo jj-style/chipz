@@ -18,8 +18,8 @@ import { PlayerList } from './components/PlayerList';
 import { GameScreen } from './components/GameScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { LeaveGameIcon, leaveGameAlert } from './components/LeaveGame';
-import Constants from "expo-constants";
-const { manifest } = Constants;
+
+import { api } from './api';
 
 import { AppContext } from './AppContext';
 
@@ -31,18 +31,6 @@ import {YellowBox} from 'react-native';
 YellowBox.ignoreWarnings(['Warning:', 'Setting a timer', "Can't"]);
 
 const Stack = createStackNavigator();
-
-// let api;
-// if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-//     // dev code
-//     api = "http://127.0.0.1:5000/";
-// } else {
-//     // production code
-//     api = "production-api.com";
-// }
-const api = (typeof manifest.packagerOpts === `object`) && manifest.packagerOpts.dev
-  ? "http://" + manifest.debuggerHost.split(`:`).shift().concat(`:5000`)
-  : `api.example.com`;
 
 const initialState = {
     loading: true,
@@ -82,11 +70,6 @@ const App = () => {
                     signOut: true,
                     userToken: null
                 };
-            case 'SET_TOKEN':
-                return {
-                    ...prevState,
-                    userToken: action.token
-                }
             case 'RELOAD':
                 return {
                     ...prevState,
@@ -169,8 +152,8 @@ const App = () => {
             .then(data => {
                 gameCode = data.room;
                 const token = {gameCode: gameCode, displayName, gameStarted: false, host: true};
-                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
                 storeUserToken(JSON.stringify(token)).then().then(() => {
+                    websocket.emit("join", {"name":displayName, "gameCode":gameCode});
                     dispatch({type: "RELOAD"});
                 })
             })
@@ -197,8 +180,8 @@ const App = () => {
         })
         .then(newdata => {
             const token = {...data, gameStarted:false, host:false};
-            websocket.emit("join", {"name":displayName, "gameCode":gameCode});
             storeUserToken(JSON.stringify(token)).then().then(() => {
+                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
                 dispatch({type: "RELOAD"});
             })
         })
@@ -210,8 +193,9 @@ const App = () => {
         })
         },
         startGame: () => {
-            storeUserToken(JSON.stringify({...(state.userToken), gameStarted: true}))
-            .then(() => dispatch({ type: 'START_GAME' }))
+            dispatch({ type: 'START_GAME' });
+            console.log("Start game store token", state.userToken);
+            storeUserToken(JSON.stringify(state.userToken))
             .catch((e) => console.log(e));
         },
         leaveGame: async data => {
@@ -253,6 +237,9 @@ const App = () => {
                 }
             );
         });
+        websocket.off("STARTGAME").on("STARTGAME", data => {
+            appContext.startGame();
+        })
         return () => { websocket.off("GAMEENDED"); }
     },[state])
 
@@ -312,7 +299,7 @@ const App = () => {
                     </Stack.Screen>
                     :
                     <Stack.Screen name="Game Screen"options={{ headerShown: false }}>
-                        {props => <GameScreen {...props} contextProvider={AppContext} /> }
+                        {props => <GameScreen {...props} contextProvider={AppContext} token={state.userToken}/> }
                     </Stack.Screen>
                     }
                 </>

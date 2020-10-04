@@ -34,6 +34,10 @@ class Player:
     def dealer(self):
         return self._dealer
 
+    @dealer.setter
+    def dealer(self, new_status):
+        self._dealer = new_status
+
     def __str__(self):
         return self._name
 

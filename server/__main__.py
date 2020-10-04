@@ -83,7 +83,10 @@ def game(room=None):
         elif request.method == "DELETE":
             game_data = request.get_json()
             try:
+                player_to_be_removed = GAMES[room].players[GAMES[room].players.index(game_data["displayName"])]
                 GAMES[room].remove_player(game_data["displayName"])
+                if player_to_be_removed.dealer == True and len(GAMES[room].players) >= 1:
+                    GAMES[room].players[0].dealer = True
                 return jsonify(success=True)
             except ValueError as e:
                 return jsonify(str(e)), 400
@@ -124,7 +127,12 @@ def set_player_list_info(game_code, new_player_list_info):
 def end_game(room):
     print("Received request to end game for " + room)
     # GAMES.pop(room)
-    emit("GAMEENDED", json.dumps({"msg":"host has left, game has ended."}), room=room)
+    emit("GAMEENDED", room=room)
+
+@socketio.on("STARTGAME")
+def start_game(room):
+    print("Starting game for " + room)
+    emit("STARTGAME", room=room)
 
 if __name__ == "__main__":
     # app.run(host='0.0.0.0', debug=True)
