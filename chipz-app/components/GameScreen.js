@@ -191,6 +191,10 @@ const InfoScreen = ({contextProvider, token, gameData}) => {
         <Text style={[{textAlign: 'center'},styles.bigText]}>
             Blinds: £{gameData._small_blind}/{gameData._small_blind*2}
         </Text>
+        <gStyle.HorizontalRule/>
+        <Text style={[{textAlign: 'center'},styles.bigText]}>
+            Game: {token.gameCode}
+        </Text>
         <View style={{flex: 1, justifyContent: 'flex-end'}}>
             <StyledButton buttonText="Leave Game" 
                 onPress={
@@ -227,8 +231,8 @@ export const GameScreen = ({navigation, contextProvider, token}) => {
                 } return res.json();
             }).then(data => {
                 console.log("game data found");
-                setLoading(false);
                 setGameData(data);
+                setLoading(false);
             }).catch((error) => {
                 error.then(e => {
                     console.log(e.message);

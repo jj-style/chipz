@@ -90,7 +90,7 @@ const App = () => {
         }
         // retrieved token from users phone but must check if game still exists
         if (token !== null) {
-            fetch(`${api}/game/${token.gameCode}`,
+            await fetch(`${api}/game/${token.gameCode}`,
                 {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
@@ -106,22 +106,24 @@ const App = () => {
             }).catch((error) => {
                 error.then(e => {
                     console.log(e.message);
+                    console.log("restoring null");
                     dispatch({type: 'RESTORE_TOKEN', token: null});
                 })
             });
         } else {
+            console.log("token was null, restoring null");
             dispatch({type: 'RESTORE_TOKEN', token: null});
         }
     };
 
     useEffect(() => {
         asyncTokenLoad();
-        // storeUserToken(JSON.stringify(state.userToken));
     }, [state.loading]);
 
     const storeUserToken = async (data) => {
         try {
             await AsyncStorage.setItem('userToken', data);
+            console.log("stored token", data);
         } catch (e) {
             console.log("error saving data");
         }
@@ -149,13 +151,12 @@ const App = () => {
                     body: JSON.stringify(data)
                 }
             ).then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 gameCode = data.room;
-                const token = {gameCode: gameCode, displayName, gameStarted: false, host: true};
-                storeUserToken(JSON.stringify(token)).then().then(() => {
-                    websocket.emit("join", {"name":displayName, "gameCode":gameCode});
-                    dispatch({type: "RELOAD"});
-                })
+                const token = {gameCode: gameCode, displayName: displayName, gameStarted: false, host: true};
+                await storeUserToken(JSON.stringify(token))
+                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
+                dispatch({type: "RELOAD"});
             })
             .catch(e => console.log("something went wrong creating a game :("));
 
@@ -178,12 +179,12 @@ const App = () => {
                 throw res.json()
             return res.json();
         })
-        .then(newdata => {
-            const token = {...data, gameStarted:false, host:false};
-            storeUserToken(JSON.stringify(token)).then().then(() => {
-                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
-                dispatch({type: "RELOAD"});
-            })
+        .then(async newdata => {
+            const token = {gameCode: gameCode, displayName: displayName, gameStarted: false, host: false};
+            await storeUserToken(JSON.stringify(token));
+            
+            websocket.emit("join", {"name":displayName, "gameCode":gameCode});
+            dispatch({type: "RELOAD"});
         })
         .catch((error) => {
             error.then((e) => {
@@ -192,11 +193,11 @@ const App = () => {
             })
         })
         },
-        startGame: () => {
-            dispatch({ type: 'START_GAME' });
-            console.log("Start game store token", state.userToken);
-            storeUserToken(JSON.stringify(state.userToken))
-            .catch((e) => console.log(e));
+        startGame: async data => {
+            const { userToken } = data;
+            const token = { ...userToken, gameStarted:true }
+            await storeUserToken(JSON.stringify(token))
+            dispatch({type: "RELOAD"});
         },
         leaveGame: async data => {
             const {gameCode, displayName} = data;
@@ -211,14 +212,12 @@ const App = () => {
                     throw res.json()
                 return res.json();
             })
-            .then(newdata => {
-                removeUserToken()
-                .then(() => {
-                    websocket.emit("leave", {"name":displayName, "gameCode":gameCode});
-                    dispatch({ type: 'LEAVE_GAME' });
-                    websocket.emit("GETPLAYERLISTINFO", gameCode);
-                })
-                .catch((e) => console.log(e));
+            .then(async newdata => {
+                await removeUserToken();
+                websocket.emit("leave", {"name":displayName, "gameCode":gameCode});
+                // dispatch({ type: 'LEAVE_GAME' });
+                dispatch({type: "RELOAD"});
+                websocket.emit("GETPLAYERLISTINFO", gameCode);
             })
             .catch((error) => {
                 error.then((e) => {
@@ -238,10 +237,10 @@ const App = () => {
             );
         });
         websocket.off("STARTGAME").on("STARTGAME", data => {
-            appContext.startGame();
+            appContext.startGame(state);
         })
         return () => { websocket.off("GAMEENDED"); }
-    },[state])
+    }, [state])
 
     if (state.loading)
         return <SplashScreen />;
