@@ -2,37 +2,45 @@ from abc import ABC
 from datetime import datetime, timedelta
 import json
 from .player import PlayerList, Player
+from .game_enums import MoveType, RoundType
 
 class PokerGame(ABC):
-    def __init__(self, starting_chips):
+    def __init__(self, starting_chips: int):
         self._players = PlayerList()
         self._starting_chips = starting_chips
-        self._started_at = None
+        self._started_at: datetime = None
 
     def start_game(self):
         self._started_at = datetime.now()
 
     @property
-    def starting_chips(self):
+    def starting_chips(self) -> int:
         return self._starting_chips
 
     @property
-    def players(self):
+    def players(self) -> PlayerList:
         return self._players
 
     @players.setter
-    def players(self, new_player_list):
+    def players(self, new_player_list: PlayerList):
         self._players = new_player_list
 
     @property
-    def pot(self):
+    def pot(self) -> int:
         return sum(player.chips_played for player in self.players)
 
-    def add_player(self, player_name, is_dealer):
+    def add_player(self, player_name:str, is_dealer:bool) ->None:
         self._players.add(Player(player_name, self._starting_chips, dealer=is_dealer))
 
-    def remove_player(self, player_name):
+    def remove_player(self, player_name:str)->None:
         self._players.remove(player_name)
+
+    def player_make_move(self, player_name: str, move: str, **kwargs) -> None:
+        idx = self.players.index(player_name)
+        player = self.players[idx]
+        player.move = MoveType[move.upper()]
+        player.chips_played += kwargs.get("bet", 0)
+        #TODO: need additional logic for folding and stuff
 
     def toJson(self):
         full_dict = {**(self.__dict__), **{"_pot":self.pot}}

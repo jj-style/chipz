@@ -1,12 +1,14 @@
+from typing import List
 from itertools import chain
+from .game_enums import MoveType
 
 class Player:
     def __init__(self, name, chips, dealer=False):
-        self._name = name
-        self._chips = chips
-        self._last_move = None
-        self._chips_played = 0
-        self._dealer = dealer
+        self._name: str = name
+        self._chips: int = chips
+        self._last_move: MoveType = None
+        self._chips_played: int = 0
+        self._dealer: bool = dealer
 
     def __eq__(self, rhs):
         if not isinstance(rhs, Player):
@@ -19,27 +21,27 @@ class Player:
         return self.display_name != rhs.display_name
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self._name
 
     @property
-    def move(self):
+    def move(self) -> MoveType:
         return self._last_move
 
     @move.setter
-    def move(self, value):
+    def move(self, value: MoveType) -> None:
         self._last_move = value
 
     @property
-    def dealer(self):
+    def dealer(self) -> bool:
         return self._dealer
 
     @dealer.setter
-    def dealer(self, new_status):
+    def dealer(self, new_status: bool) -> None:
         self._dealer = new_status
 
     @property
-    def chips_played(self):
+    def chips_played(self) -> int:
         return self._chips_played
 
     def __str__(self):
@@ -52,7 +54,7 @@ class Player:
 
 class PlayerList:
     def __init__(self, players=None):
-        self._players = list(players) if players is not None else []
+        self._players: List[Player] = list(players) if players is not None else []
 
     def __len__(self):
         return len(self._players)
@@ -63,31 +65,38 @@ class PlayerList:
     def __repr__(self):
         return "PlayerList({})".format(repr(self._players) if self._players else '')
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Player:
         result = self._players[index]
         return PlayerList(result) if isinstance(index, slice) else result
 
     def __add__(self, rhs):
         return PlayerList(chain(self._players, rhs._players))
 
-    def __contains__(self, item):
+    def __contains__(self, player_name:str):
         for p in self:
-            if p._name == item:
+            if p._name == player_name:
                 return True
         return False
 
-    def index(self, item):
+    def index(self, player_name:str):
         for i in range(len(self)):
-            if self[i]._name == item:
+            if self[i]._name == player_name:
                 return i
-        raise ValueError(f"{item} is not in PlayerList")
+        raise ValueError(f"{player_name} is not in PlayerList")
 
-    def remove(self, item):
-        self._players = [p for p in self._players if p.display_name != item]
+    def remove(self, player: Player) -> None:
+        self._players = [p for p in self._players if p.display_name != player]
 
-    def add(self, item):
-        self._players.append(item)
+    def add(self, player: Player) -> None:
+        self._players.append(player)
 
     @property
     def players(self):
         return self._players
+
+    @property
+    def dealer(self) -> Player:
+        for player in self._players:
+            if player.dealer:
+                return player
+        raise LookupError("No dealer found in the player list")
