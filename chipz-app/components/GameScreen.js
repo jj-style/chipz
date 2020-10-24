@@ -187,26 +187,38 @@ const InfoScreen = ({contextProvider, token, gameData}) => {
                     keyExtractor={(item, index) => `player-info-${index}`}
                 />
             </View>
+            {gameData._small_blind !== undefined ?
+            <>
+                <gStyle.HorizontalRule/>
+                <Text style={[{textAlign: 'center'},styles.bigText]}>
+                    Blinds: £{gameData._small_blind}/{gameData._small_blind*2}
+                </Text>
+                {gameData._blinds_up_at !== null ?
+                <>
+                    <gStyle.HorizontalRule/>
+                    <Text style={[{textAlign: 'center'},styles.bigText]}>
+                        Blinds up at {new Date(gameData._blinds_up_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </Text>
+                </>
+                :null}
+            </>
+            :null}
             <gStyle.HorizontalRule/>
-        <Text style={[{textAlign: 'center'},styles.bigText]}>
-            Blinds: £{gameData._small_blind}/{gameData._small_blind*2}
-        </Text>
-        <gStyle.HorizontalRule/>
-        <Text style={[{textAlign: 'center'},styles.bigText]}>
-            Game: {token.gameCode}
-        </Text>
-        <View style={{flex: 1, justifyContent: 'flex-end'}}>
-            <StyledButton buttonText="Leave Game" 
-                onPress={
-                    () => leaveGameAlert(()=>null,
-                    () => leaveGame(
-                        {   "gameCode":     token.gameCode,
-                            "displayName":  token.displayName
-                        }
-                    ))
-                } 
-                style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
-        </View>
+            <Text style={[{textAlign: 'center'},styles.bigText]}>
+                Game: {token.gameCode}
+            </Text>
+            <View style={{flex: 1, justifyContent: 'flex-end'}}>
+                <StyledButton buttonText="Leave Game" 
+                    onPress={
+                        () => leaveGameAlert(()=>null,
+                        () => leaveGame(
+                            {   "gameCode":     token.gameCode,
+                                "displayName":  token.displayName
+                            }
+                        ))
+                    } 
+                    style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
+            </View>
         </View>
     );
 }

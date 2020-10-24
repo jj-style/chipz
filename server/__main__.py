@@ -3,8 +3,9 @@ from flask import request, jsonify, abort, make_response
 from flask_cors import CORS, cross_origin
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 import random, json
+from typing import Dict
 
-from PokerGame.poker_game import NoBlindsPokerGame, BlindsPokerGame
+from PokerGame.poker_game import NoBlindsPokerGame, BlindsPokerGame, PokerGame
 from PokerGame.player import Player, PlayerList
 
 app = Flask(__name__)
@@ -12,7 +13,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", logger=True, async_mode="gevent")
 
-GAMES = {}
+GAMES : Dict[str, PokerGame] = {}
 
 # def generate_game_code():
 #     valid = False
@@ -53,7 +54,7 @@ def hello_world():
 def game(room=None):
     if not room:
         if request.method == "GET":
-            return jsonify([g.to_dict() for r,g in GAMES.items()])
+            return jsonify([g.toJson() for r,g in GAMES.items()])
         else:
             code = generate_game_code()
             game_data = request.get_json()
@@ -69,9 +70,7 @@ def game(room=None):
         print("made request to room: " + room)
         if request.method == "GET":
             if GAMES.get(room):
-                # return json.dumps({**GAMES[room], **{"_pot":GAMES[room].pot}}, default=lambda x: x.__dict__)
-                full_dict = {**GAMES[room].__dict__, **{"_pot":GAMES[room].pot}}
-                return json.dumps(full_dict, default=lambda x: x.__dict__)
+                return GAMES[room].toJson()
             else:
                 return jsonify(message="Saved game not found"), 404
         elif request.method == "POST":
@@ -134,6 +133,7 @@ def end_game(room):
 @socketio.on("STARTGAME")
 def start_game(room):
     print("Starting game for " + room)
+    GAMES[room].start_game()
     emit("STARTGAME", room=room)
 
 if __name__ == "__main__":

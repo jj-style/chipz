@@ -1,5 +1,6 @@
 from abc import ABC
 from datetime import datetime, timedelta
+import json
 from .player import PlayerList, Player
 
 class PokerGame(ABC):
@@ -9,7 +10,7 @@ class PokerGame(ABC):
         self._started_at = None
 
     def start_game(self):
-        self._started = datetime.now()
+        self._started_at = datetime.now()
 
     @property
     def starting_chips(self):
@@ -33,6 +34,10 @@ class PokerGame(ABC):
     def remove_player(self, player_name):
         self._players.remove(player_name)
 
+    def toJson(self):
+        full_dict = {**(self.__dict__), **{"_pot":self.pot}}
+        return json.dumps(full_dict, default=lambda x: x.isoformat() if isinstance(x, datetime) else x.__dict__) 
+
 class NoBlindsPokerGame(PokerGame):
     def __init__(self, starting_chips):
         super().__init__(starting_chips)
@@ -50,4 +55,4 @@ class BlindsPokerGame(PokerGame):
 
     def start_game(self):
         super().start_game()
-        self._blinds_up_at = self._started_at + timedelta(minutes=self._blind_interval)
+        self._blinds_up_at = None if self._blind_interval == 0 else self._started_at + timedelta(minutes=self._blind_interval)
