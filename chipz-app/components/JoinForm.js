@@ -54,6 +54,9 @@ export const JoinForm = ({navigation, contextProvider, errorMsg, clearErrorMsg})
                         value={gameCode}
                         onChangeText={(e) => setGameCode(e)}
                         underlineColorAndroid={gStyle.primary}
+                        autoCapitalize="characters"
+                        autoCompleteType="off"
+                        autoCorrect={false}
                     />
                     <TextInput
                         style={styles.text}
@@ -64,9 +67,6 @@ export const JoinForm = ({navigation, contextProvider, errorMsg, clearErrorMsg})
                         underlineColorAndroid={gStyle.primary}
                     />
                 </View>
-                <TouchableHighlight onPress={() => { setAlertText("Error name already taken"); showAlert();}} style={{alignSelf:'center'}} underlayColor="#fff">
-                    <Text>Show example error modal</Text>
-                </TouchableHighlight>
                 <StyledButton 
                     buttonText="Join Game"
                     // onPress={() => navigation.navigate("Players", {method: "join"})} // this will need to make fetch then if error, modal, otherwise navigate

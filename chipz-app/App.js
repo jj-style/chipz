@@ -18,26 +18,25 @@ import { PlayerList } from './components/PlayerList';
 import { GameScreen } from './components/GameScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { LeaveGameIcon, leaveGameAlert } from './components/LeaveGame';
-import Constants from "expo-constants";
-const { manifest } = Constants;
 
-import { AuthContext } from './AuthContext';
+import { api } from './api';
+
+import { AppContext } from './AppContext';
 
 import * as gStyle from './components/globalStyle.js';
 
+import { websocket } from './socket';
+
+import {YellowBox} from 'react-native';
+YellowBox.ignoreWarnings(['Warning:', 'Setting a timer', "Can't"]);
+
 const Stack = createStackNavigator();
 
-// let api;
-// if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-//     // dev code
-//     api = "http://127.0.0.1:5000/";
-// } else {
-//     // production code
-//     api = "production-api.com";
-// }
-const api = (typeof manifest.packagerOpts === `object`) && manifest.packagerOpts.dev
-  ? "http://" + manifest.debuggerHost.split(`:`).shift().concat(`:5000`)
-  : `api.example.com`;
+const initialState = {
+    loading: true,
+    signOut: false,
+    userToken: null
+}
 
 const App = () => {
 
@@ -71,55 +70,60 @@ const App = () => {
                     signOut: true,
                     userToken: null
                 };
+            case 'RELOAD':
+                return {
+                    ...prevState,
+                    loading: true
+                }
+            default:
+                return prevState
         }
-    },
-        {
-            loading: true,
-            signOut: false,
-            userToken: null
+    }, initialState);
+    
+    const asyncTokenLoad = async () => {
+        let token;
+        try {
+            token = await AsyncStorage.getItem('userToken');
+            token =  token != null ? JSON.parse(token) : null;
+        } catch(e) {
+            token = null;
         }
-    );
+        // retrieved token from users phone but must check if game still exists
+        if (token !== null) {
+            await fetch(`${api}/game/${token.gameCode}`,
+                {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            )
+            .then(res => {
+                if (!res.ok) {
+                    throw res.json();
+                } return res.json();
+            }).then(data => {
+                console.log("game found can restore")
+                dispatch({type: 'RESTORE_TOKEN', token: token});
+            }).catch((error) => {
+                error.then(e => {
+                    console.log(e.message);
+                    console.log("restoring null");
+                    dispatch({type: 'RESTORE_TOKEN', token: null});
+                })
+            });
+        } else {
+            console.log("token was null, restoring null");
+            dispatch({type: 'RESTORE_TOKEN', token: null});
+        }
+    };
 
     useEffect(() => {
-        const asyncTokenLoad = async () => {
-            let token;
-            try {
-                token = await AsyncStorage.getItem('userToken');
-                token =  token != null ? JSON.parse(token) : null;
-            } catch(e) {
-                token = null;
-            }
-            // retrieved token from users phone but must check if game still exists
-            if (token) {
-                fetch(`${api}/game/${token.gameCode}`,
-                    {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                    }
-                )
-                .then(res => {
-                    if (!res.ok) {
-                        throw res.json();
-                    } return res.json();
-                }).then(data => {
-                    console.log("game found can restore")
-                    dispatch({type: 'RESTORE_TOKEN', token: token});
-                }).catch((error) => {
-                    error.then(e => {
-                        console.log(e.message);
-                        dispatch({type: 'RESTORE_TOKEN', token: null});
-                    })
-                });
-            } else {
-                dispatch({type: 'RESTORE_TOKEN', token: null});
-            }
-        };
         asyncTokenLoad();
-    }, []);
+    }, [state.loading]);
 
     const storeUserToken = async (data) => {
         try {
             await AsyncStorage.setItem('userToken', data);
+            console.log("stored token", data);
         } catch (e) {
             console.log("error saving data");
         }
@@ -134,7 +138,7 @@ const App = () => {
         }
     }
 
-    const authContext = useMemo(() => ({
+    const appContext = useMemo(() => ({
         createGame: async data => {
             const { startingChips, useBlinds, startingBlinds, blindInterval, displayName } = data;
             // get game code from server here passing this data to create game
@@ -147,15 +151,12 @@ const App = () => {
                     body: JSON.stringify(data)
                 }
             ).then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 gameCode = data.room;
-                const token = {gameCode: gameCode, displayName, gameStarted: false, host: true};
-                storeUserToken(JSON.stringify(token))
-                .then(() => {
-                    console.log("stored user token", token);
-                    dispatch({ type: 'JOIN_GAME', token: token });
-                })
-                .catch((e) => console.log(e));
+                const token = {gameCode: gameCode, displayName: displayName, gameStarted: false, host: true};
+                await storeUserToken(JSON.stringify(token))
+                websocket.emit("join", {"name":displayName, "gameCode":gameCode});
+                dispatch({type: "RELOAD"});
             })
             .catch(e => console.log("something went wrong creating a game :("));
 
@@ -178,11 +179,12 @@ const App = () => {
                 throw res.json()
             return res.json();
         })
-        .then(newdata => {
-            const token = {...data, gameStarted:false, host:false};
-            storeUserToken(JSON.stringify(token))
-            .then(() => dispatch({ type: 'JOIN_GAME', token: token }))
-            .catch((e) => console.log(e));
+        .then(async newdata => {
+            const token = {gameCode: gameCode, displayName: displayName, gameStarted: false, host: false};
+            await storeUserToken(JSON.stringify(token));
+            
+            websocket.emit("join", {"name":displayName, "gameCode":gameCode});
+            dispatch({type: "RELOAD"});
         })
         .catch((error) => {
             error.then((e) => {
@@ -191,23 +193,60 @@ const App = () => {
             })
         })
         },
-        startGame: () => {
-            storeUserToken(JSON.stringify({...(state.userToken), gameStarted: true}))
-            .then(() => dispatch({ type: 'START_GAME' }))
-            .catch((e) => console.log(e));
+        startGame: async data => {
+            const { userToken } = data;
+            const token = { ...userToken, gameStarted:true }
+            await storeUserToken(JSON.stringify(token))
+            dispatch({type: "RELOAD"});
         },
-        leaveGame: () => {
-            removeUserToken()
-            .then(() => dispatch({ type: 'LEAVE_GAME' }))
-            .catch((e) => console.log(e));
+        leaveGame: async data => {
+            const {gameCode, displayName} = data;
+            fetch(`${api}/game/${gameCode}`,
+            {
+                method: "DELETE",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }
+            ).then(res => {
+                if (res.status >=400)
+                    throw res.json()
+                return res.json();
+            })
+            .then(async newdata => {
+                await removeUserToken();
+                websocket.emit("leave", {"name":displayName, "gameCode":gameCode});
+                // dispatch({ type: 'LEAVE_GAME' });
+                dispatch({type: "RELOAD"});
+                websocket.emit("GETPLAYERLISTINFO", gameCode);
+            })
+            .catch((error) => {
+                error.then((e) => {
+                    console.log(e);
+                })
+            })
         }
     }),[]);
+
+    useEffect(() => {
+        websocket.off("GAMEENDED").on("GAMEENDED", data => {
+            appContext.leaveGame(
+                {
+                    "gameCode":    state.userToken.gameCode,
+                    "displayName":  state.userToken.displayName
+                }
+            );
+        });
+        websocket.off("STARTGAME").on("STARTGAME", data => {
+            appContext.startGame(state);
+        })
+        return () => { websocket.off("GAMEENDED"); }
+    }, [state])
 
     if (state.loading)
         return <SplashScreen />;
 
     return (
-        <AuthContext.Provider value={authContext}>
+        <AppContext.Provider value={appContext}>
         <NavigationContainer>
             <Stack.Navigator 
                     screenOptions={{
@@ -224,10 +263,10 @@ const App = () => {
                 <>
                     <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Create Game">
-                        {props => <CreateForm {...props} contextProvider={AuthContext} /> }
+                        {props => <CreateForm {...props} contextProvider={AppContext} /> }
                     </Stack.Screen>
                     <Stack.Screen name="Join Game">
-                        {props => <JoinForm {...props} contextProvider={AuthContext} errorMsg={joinErrorMsg} clearErrorMsg={() => setJoinErrorMsg("")} /> }
+                        {props => <JoinForm {...props} contextProvider={AppContext} errorMsg={joinErrorMsg} clearErrorMsg={() => setJoinErrorMsg("")} /> }
                     </Stack.Screen>
                 </>
                 :
@@ -237,23 +276,36 @@ const App = () => {
                         options={{ 
                             headerLeft: () => (
                                 <LeaveGameIcon
-                                    onPress={() => leaveGameAlert(()=>null, authContext.leaveGame)}
+                                    onPress={   () => leaveGameAlert(()=>null,
+                                                state.userToken.host === false?
+                                                ()=>{
+                                                    appContext.leaveGame(
+                                                    {"gameCode":    state.userToken.gameCode,
+                                                    "displayName":  state.userToken.displayName
+                                                    }
+                                                )}
+                                                :
+                                                () => websocket.emit("ENDGAME", state.userToken.gameCode),
+                                                state.userToken.host
+                                                )
+                                            }
                                 />
-                            )
+                            ),
+                            title: `Game ${state.userToken.gameCode}`
                         }}
                     >
-                        {props => <PlayerList {...props} contextProvider={AuthContext} method={state.userToken.host?"create":"join"} /> }
+                        {props => <PlayerList {...props} contextProvider={AppContext} method={state.userToken.host?"create":"join"} gameCode={state.userToken.gameCode}/> }
                     </Stack.Screen>
                     :
                     <Stack.Screen name="Game Screen"options={{ headerShown: false }}>
-                        {props => <GameScreen {...props} contextProvider={AuthContext} /> }
+                        {props => <GameScreen {...props} contextProvider={AppContext} token={state.userToken}/> }
                     </Stack.Screen>
                     }
                 </>
             }
             </Stack.Navigator>
         </NavigationContainer>
-        </AuthContext.Provider>
+        </AppContext.Provider>
     );
 }
 

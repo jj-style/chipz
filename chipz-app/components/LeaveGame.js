@@ -6,9 +6,12 @@ export const LeaveGameIcon = ({onPress}) => {
     return <Icon name="exit-run" size={25} onPress={onPress} color='#fff'/>
 }
 
-export const leaveGameAlert = (cancelOnPress, okOnPress) => {
+export const leaveGameAlert = (cancelOnPress, okOnPress, host) => {
     Alert.alert(
     "Warning",
+    host=== true?
+    "Are you sure you want to leave the game? As host this will end the game for all players."
+    :
     "Are you sure you want to leave the game?",
     [
         {

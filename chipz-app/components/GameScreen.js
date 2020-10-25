@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableHighlight, Slider, FlatList } from 'react-native';                
 
 import * as gStyle from './globalStyle';
@@ -9,7 +9,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { leaveGameAlert } from './LeaveGame';
 
+import { api } from '../api';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SplashScreen } from './SplashScreen';
 
 const tmpState = {
     pot: 20,
@@ -76,7 +79,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const PlayScreen = () => {
+const PlayScreen = ({gameData, contextProvider, token}) => {
     const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
     const [ newBet, setNewBet ] = useState(minBet);
 
@@ -94,14 +97,7 @@ const PlayScreen = () => {
     return(
         <View style={{flex: 1, margin: 10, marginTop: 30}}>
             <View style={styles.infoBox}>
-                <Text style={styles.infoBoxText}>Pot: £{tmpState.pot}</Text>
-                {chipsOut ? 
-                    <Text style={styles.infoBoxText}>
-                        Chips out: £{chipsOut}
-                    </Text>
-                :
-                    null
-                }
+                <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
             </View>
             <View style={styles.buttonGroup}>
                 <StyledButton 
@@ -129,9 +125,9 @@ const PlayScreen = () => {
                     <View style={{width: "100%", alignItems: 'center'}}>
                         <Text style={{fontSize: 18}}>Bet: £{newBet}</Text>
                         <Slider 
-                            minimumValue={minBet}
-                            maximumValue={chipStack}
-                            step={minBet}
+                            minimumValue={minBet}    // TODO: will need to recalculate this
+                            maximumValue={chipStack} // TODO: max will be find the player then their stack
+                            step={minBet}            // TODO: and this
                             onValueChange={(n) => setNewBet(n)}
                             value={newBet}
                             style={{width: "75%", marginTop: 10, marginBottom: 10}}
@@ -169,39 +165,92 @@ const PlayScreen = () => {
     );
 }
 
-const PlayerStats = ({info}) => {
-    const fontWeight = tmpState.thisPlayer === info.name ? "bold" : "normal";
+const PlayerStats = ({info, thisPlayer}) => {
+    const fontWeight = thisPlayer === info._name ? "bold" : "normal";
     return (
         <View style={{flex: 1, flexDirection: 'row'}}>
-            <Text style={[styles.infoName, {fontWeight: fontWeight}]}>{info.name}</Text>
-            <Text style={[styles.infoChips, {fontWeight: fontWeight}]}>£{info.chips}</Text>
+            <Text style={[styles.infoName, {fontWeight: fontWeight}]}>{info._name}</Text>
+            <Text style={[styles.infoChips, {fontWeight: fontWeight}]}>£{info._chips}</Text>
         </View>
     );
 }
 
-const InfoScreen = ({contextProvider}) => {
+const InfoScreen = ({contextProvider, token, gameData}) => {
     const { leaveGame } = useContext(contextProvider);
     return (
         <View style={{flex: 1}}>
             <View style={styles.infoPlayers}>
                 <Text style={[{textAlign:'center', marginTop: 20, marginBottom: 20},styles.bigText]}>Table Standings</Text>
                 <FlatList
-                    data={tmpState.players.sort((a,b) => { return b.chips - a.chips })}
-                    renderItem={ ({item}) => <PlayerStats info={item} /> }
+                    data={gameData._players._players.sort((a,b) => { return b._chips - a._chips })}
+                    renderItem={ ({item}) => <PlayerStats info={item} thisPlayer={token.displayName}/> }
+                    keyExtractor={(item, index) => `player-info-${index}`}
                 />
             </View>
+            {gameData._small_blind !== undefined ?
+            <>
+                <gStyle.HorizontalRule/>
+                <Text style={[{textAlign: 'center'},styles.bigText]}>
+                    Blinds: £{gameData._small_blind}/{gameData._small_blind*2}
+                </Text>
+                {gameData._blinds_up_at !== null ?
+                <>
+                    <gStyle.HorizontalRule/>
+                    <Text style={[{textAlign: 'center'},styles.bigText]}>
+                        Blinds up at {new Date(gameData._blinds_up_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </Text>
+                </>
+                :null}
+            </>
+            :null}
             <gStyle.HorizontalRule/>
-        <Text style={[{textAlign: 'center'},styles.bigText]}>Blinds: £{tmpState.smallBlind}/{tmpState.smallBlind*2}</Text>
-        <View style={{flex: 1, justifyContent: 'flex-end'}}>
-            <StyledButton buttonText="Leave Game" onPress={() => leaveGameAlert(()=>null,leaveGame)} style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
-        </View>
+            <Text style={[{textAlign: 'center'},styles.bigText]}>
+                Game: {token.gameCode}
+            </Text>
+            <View style={{flex: 1, justifyContent: 'flex-end'}}>
+                <StyledButton buttonText="Leave Game" 
+                    onPress={
+                        () => leaveGameAlert(()=>null,
+                        () => leaveGame(
+                            {   "gameCode":     token.gameCode,
+                                "displayName":  token.displayName
+                            }
+                        ))
+                    } 
+                    style={{backgroundColor:'red'}} underlayColor="#ff4d4d"/>
+            </View>
         </View>
     );
 }
 
 const Tab = createBottomTabNavigator();
 
-export const GameScreen = ({navigation, contextProvider}) => {
+export const GameScreen = ({navigation, contextProvider, token}) => {
+
+    const [gameData, setGameData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch(`${api}/game/${token.gameCode}`,
+                {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            )
+            .then(res => {
+                if (!res.ok) {
+                    throw res.json();
+                } return res.json();
+            }).then(data => {
+                console.log("game data found");
+                setGameData(data);
+                setLoading(false);
+            }).catch((error) => {
+                error.then(e => {
+                    console.log(e.message);
+                })
+        });
+    },[])
 
     return (
         <NavigationContainer independent={true}>
@@ -225,10 +274,17 @@ export const GameScreen = ({navigation, contextProvider}) => {
                     inactiveTintColor: 'gray',
                     }}
             >
-                <Tab.Screen name="Play" component={PlayScreen}/>
-                <Tab.Screen name="Info">
-                    {props => <InfoScreen {...props} contextProvider={contextProvider}/>}
-                </Tab.Screen>
+            {loading?
+                <Tab.Screen name="Loading" component={SplashScreen} />
+                :<>
+                    <Tab.Screen name="Play">
+                        {props => <PlayScreen {...props} contextProvider={contextProvider} token={token} gameData={gameData}/>}
+                    </Tab.Screen>
+                    <Tab.Screen name="Info">
+                        {props => <InfoScreen {...props} contextProvider={contextProvider} token={token} gameData={gameData}/>}
+                    </Tab.Screen>
+                </>
+            }
             </Tab.Navigator>
         </NavigationContainer>
     );
