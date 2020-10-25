@@ -1,38 +1,29 @@
-from flask import Flask
-from flask import request, jsonify, abort, make_response
-from flask_cors import CORS, cross_origin
-from flask_socketio import SocketIO, send, emit, join_room, leave_room
-import random, json
+import random, json, os
 from typing import Dict
 
-from PokerGame.poker_game import NoBlindsPokerGame, BlindsPokerGame, PokerGame
-from PokerGame.player import Player, PlayerList
+from flask import current_app as app
+from app import socketio
+from flask import request, jsonify, abort, make_response
+from flask_cors import cross_origin
+from flask_socketio import send, emit, join_room, leave_room
 
-app = Flask(__name__)
-app.config['CORS_HEADERS'] = 'Content-Type'
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", logger=True, async_mode="gevent")
+from app.PokerGame import PokerGame, NoBlindsPokerGame, BlindsPokerGame
+from app.PokerGame import Player, PlayerList
 
-GAMES : Dict[str, PokerGame] = {}
+GAMES: Dict[str, PokerGame] = {}
 
-# def generate_game_code():
-#     valid = False
-#     while not valid:
-#         code = ""
-#         for i in range(6):
-#             code += (chr(random.randint(65,90)))
-#         valid = code not in GAMES
-#     return code
 
 def generate_game_code():
     valid = False
-    with open("data/words.txt","r") as f:
+    path = os.path.join(os.path.dirname(__file__), "data/words.txt")
+    with open(path, "r") as f:
         lines = f.readlines()
         while not valid:
             two_words = random.sample(lines, 2)
-            code = "".join(map(str.strip,two_words))
+            code = "".join(map(str.strip, two_words))
             valid = code not in GAMES
     return code
+
 
 def add_player_to_game(player_name, game_code, dealer=False):
     try:
@@ -43,10 +34,12 @@ def add_player_to_game(player_name, game_code, dealer=False):
     except KeyError:
         raise ValueError(f"Game {game_code} could not be found")
 
+
 @app.route("/")
 @cross_origin()
 def hello_world():
     return "Hello, World!"
+
 
 @app.route("/game", methods=["GET", "POST"])
 @app.route("/game/<string:room>", methods=["GET", "POST", "DELETE"])
@@ -54,23 +47,23 @@ def hello_world():
 def game(room=None):
     if not room:
         if request.method == "GET":
-            return jsonify([g.toJson() for r,g in GAMES.items()])
+            return jsonify([g.to_json() for r, g in GAMES.items()])
         else:
             code = generate_game_code()
             game_data = request.get_json()
             print(game_data)
             GAMES[code] = BlindsPokerGame(game_data["startingChips"],
-                                            game_data["startingBlinds"], 
-                                            game_data["blindInterval"]) \
-                            if game_data["useBlinds"] \
-                            else NoBlindsPokerGame(game_data["startingChips"])
+                                          game_data["startingBlinds"],
+                                          game_data["blindInterval"]) \
+                if game_data["useBlinds"] \
+                else NoBlindsPokerGame(game_data["startingChips"])
             add_player_to_game(game_data["displayName"], code, dealer=True)
-            return jsonify({"room":code})
+            return jsonify({"room": code})
     else:
         print("made request to room: " + room)
         if request.method == "GET":
             if GAMES.get(room):
-                return GAMES[room].toJson()
+                return GAMES[room].to_json()
             else:
                 return jsonify(message="Saved game not found"), 404
         elif request.method == "POST":
@@ -92,6 +85,7 @@ def game(room=None):
             except ValueError as e:
                 return jsonify(str(e)), 400
 
+
 @socketio.on("join")
 def on_join(data):
     name = data["name"]
@@ -100,6 +94,7 @@ def on_join(data):
     print(f"{name} has joined the game {room}")
     # send(name + " has entered the game.", room=room)
     # send(name + " has entered the game", room=room)
+
 
 @socketio.on("leave")
 def on_leave(data):
@@ -110,19 +105,22 @@ def on_leave(data):
     # GAMES[room].remove_player(name)
     # send(name + " has left the game.", room=room)
 
+
 @socketio.on("GETPLAYERLISTINFO")
 def get_player_list_info(game_code):
     emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+
 
 @socketio.on("SETPLAYERLISTINFO")
 def set_player_list_info(game_code, new_player_list_info):
     g = GAMES[game_code]
     new_players = PlayerList()
     for p in new_player_list_info:
-        new_p = Player(p['_name'],p['_chips'],p['_dealer'])
+        new_p = Player(p['_name'], p['_chips'], p['_dealer'])
         new_players.add(new_p)
     g.players = new_players
     emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+
 
 @socketio.on("ENDGAME")
 def end_game(room):
@@ -130,12 +128,9 @@ def end_game(room):
     # GAMES.pop(room)
     emit("GAMEENDED", room=room)
 
+
 @socketio.on("STARTGAME")
 def start_game(room):
     print("Starting game for " + room)
     GAMES[room].start_game()
     emit("STARTGAME", room=room)
-
-if __name__ == "__main__":
-    # app.run(host='0.0.0.0', debug=True)
-    socketio.run(app, debug=True, host='0.0.0.0', log_output=True)
