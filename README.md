@@ -17,10 +17,11 @@ When the game starts all players place their phones in-front of them and when it
 The server is written in Flask.  
 In the directory create an environment (optional) and install the dependencies in requirements.txt (required) with
 ```bash
-$ python3 -m venv env
-$ source env/bin/activate
-(env)$ pip install -r requirements.txt
-(env)$ python __main__.py
+$ cd server
+server$ python3 -m venv env
+server$ source env/bin/activate
+(env) server$ pip install -r requirements.txt
+(env) server$ python run.py
 ```
 ## Client (App)
 The app is written in React Native with the Expo framework.  
