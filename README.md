@@ -14,15 +14,26 @@ When the game starts all players place their phones in-front of them and when it
 
 # Code
 ## Server
-The server is written in Flask.  
+The server is written in Flask.
+### Run Manually
 In the directory create an environment (optional) and install the dependencies in requirements.txt (required) with
 ```bash
 $ cd server
 server$ python3 -m venv env
 server$ source env/bin/activate
 (env) server$ pip install -r requirements.txt
-(env) server$ python run.py
+(env) server$ python run.py`
+# OR...
+(env) server$ gunicorn run:app
 ```
+
+### Run with Docker
+In the server directory:
+```bash
+$ docker build . -t chipz-server:latest
+$ docker run -p 5000:5000 chipz-server
+```
+
 ## Client (App)
 The app is written in React Native with the Expo framework.  
 In the directory, install the dependencies (required) and run with expo/npm/yarn
@@ -31,3 +42,4 @@ cd chipz-app
 chipz-app$ npm install
 chipz-app$ expo start
 ```
+Then download the expo app on your physical mobile phone or follow the instructions to get it running in an emulator on your laptop.
