@@ -80,7 +80,7 @@ class PlayerList:
         return iter(self._players)
 
     def __repr__(self):
-        return "PlayerList({})".format(repr(self._players) if self._players else '')
+        return "PlayerList({})".format(repr(self._players) if self._players else "")
 
     def __getitem__(self, index) -> Player:
         result = self._players[index]

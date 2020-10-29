@@ -8,7 +8,7 @@ cors = CORS()
 
 def create_app():
     app = Flask(__name__)
-    app.config['CORS_HEADERS'] = 'Content-Type'
+    app.config["CORS_HEADERS"] = "Content-Type"
     cors.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", logger=True, async_mode="eventlet")
     with app.app_context():

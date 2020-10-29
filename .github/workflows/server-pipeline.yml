@@ -33,7 +33,10 @@ jobs:
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        flake8 --count --statistics --exit-zero --exclude server/env/ server/
+        flake8 --count --statistics server/
+    - name: Check formatting with black
+      run: |
+        black --line-length 79 --check server/
     - name: Test with pytest
       run: |
         pytest

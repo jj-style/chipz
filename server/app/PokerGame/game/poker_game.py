@@ -31,7 +31,7 @@ class PokerGame(ABC):
         return sum(player.chips_played for player in self.players)
 
     def add_player(self, player_name: str, is_dealer: bool) -> None:
-        if is_dealer == True and self._players.dealer is not None:
+        if is_dealer is True and self._players.dealer is not None:
             raise ValueError("There is already a dealer in the game")
         self._players.add(Player(player_name, self._starting_chips, dealer=is_dealer))
 
@@ -48,7 +48,10 @@ class PokerGame(ABC):
 
     def to_json(self):
         full_dict = {**self.__dict__, **{"_pot": self.pot}}
-        return json.dumps(full_dict, default=lambda x: x.isoformat() if isinstance(x, datetime) else x.__dict__)
+        return json.dumps(
+            full_dict,
+            default=lambda x: x.isoformat() if isinstance(x, datetime) else x.__dict__,
+        )
 
 
 class NoBlindsPokerGame(PokerGame):
@@ -77,5 +80,8 @@ class BlindsPokerGame(PokerGame):
 
     def start_game(self):
         super().start_game()
-        self._blinds_up_at = None if self._blind_interval == 0 else self._started_at + timedelta(
-            minutes=self._blind_interval)
+        self._blinds_up_at = (
+            None
+            if self._blind_interval == 0
+            else self._started_at + timedelta(minutes=self._blind_interval)
+        )

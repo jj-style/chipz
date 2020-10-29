@@ -1,11 +1,17 @@
-import random, json, os
+import random
+import json
+import os
 from typing import Dict
 
-from flask import current_app as app
 from app import socketio
-from flask import request, jsonify, abort, make_response
+
+from flask import current_app as app
+from flask import request
+from flask import jsonify
 from flask_cors import cross_origin
-from flask_socketio import send, emit, join_room, leave_room
+from flask_socketio import emit
+from flask_socketio import join_room
+from flask_socketio import leave_room
 
 from app.PokerGame import PokerGame, NoBlindsPokerGame, BlindsPokerGame
 from app.PokerGame import Player, PlayerList
@@ -52,11 +58,15 @@ def game(room=None):
             code = generate_game_code()
             game_data = request.get_json()
             print(game_data)
-            GAMES[code] = BlindsPokerGame(game_data["startingChips"],
-                                          game_data["startingBlinds"],
-                                          game_data["blindInterval"]) \
-                if game_data["useBlinds"] \
+            GAMES[code] = (
+                BlindsPokerGame(
+                    game_data["startingChips"],
+                    game_data["startingBlinds"],
+                    game_data["blindInterval"],
+                )
+                if game_data["useBlinds"]
                 else NoBlindsPokerGame(game_data["startingChips"])
+            )
             add_player_to_game(game_data["displayName"], code, dealer=True)
             return jsonify({"room": code})
     else:
@@ -77,9 +87,14 @@ def game(room=None):
         elif request.method == "DELETE":
             game_data = request.get_json()
             try:
-                player_to_be_removed = GAMES[room].players[GAMES[room].players.index(game_data["displayName"])]
+                player_to_be_removed = GAMES[room].players[
+                    GAMES[room].players.index(game_data["displayName"])
+                ]
                 GAMES[room].remove_player(game_data["displayName"])
-                if player_to_be_removed.dealer == True and len(GAMES[room].players) >= 1:
+                if (
+                    player_to_be_removed.dealer is True
+                    and len(GAMES[room].players) >= 1
+                ):
                     GAMES[room].players[0].dealer = True
                 return jsonify(success=True)
             except ValueError as e:
@@ -108,7 +123,11 @@ def on_leave(data):
 
 @socketio.on("GETPLAYERLISTINFO")
 def get_player_list_info(game_code):
-    emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+    emit(
+        "GETPLAYERINFO",
+        json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__),
+        room=game_code,
+    )
 
 
 @socketio.on("SETPLAYERLISTINFO")
@@ -116,10 +135,14 @@ def set_player_list_info(game_code, new_player_list_info):
     g = GAMES[game_code]
     new_players = PlayerList()
     for p in new_player_list_info:
-        new_p = Player(p['_name'], p['_chips'], p['_dealer'])
+        new_p = Player(p["_name"], p["_chips"], p["_dealer"])
         new_players.add(new_p)
     g.players = new_players
-    emit("GETPLAYERINFO", json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__), room=game_code)
+    emit(
+        "GETPLAYERINFO",
+        json.dumps(GAMES[game_code].players, default=lambda x: x.__dict__),
+        room=game_code,
+    )
 
 
 @socketio.on("ENDGAME")

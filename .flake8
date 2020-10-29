@@ -1,0 +1,6 @@
+[flake8]
+ignore = F401,W503 
+# ignore import not used because haven't finished implementing everything yet
+# ignore line break on binary operator because black did it so can't complain with that 
+max-line-length = 88
+exclude = *tests/*,*env/*

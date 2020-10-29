@@ -1,2 +1,3 @@
 .vscode/
 .idea/
+.pytest_cache/
