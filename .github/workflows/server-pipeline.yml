@@ -36,7 +36,7 @@ jobs:
         flake8 --count --statistics server/
     - name: Check formatting with black
       run: |
-        black --line-length 79 --check server/
+        black --check server/
     - name: Test with pytest
       run: |
         pytest
