@@ -51,6 +51,7 @@ def test_player_make_valid_move(game: PokerGame):
     game.player_make_move("Tony Stark", "bet", bet=10)
     assert game.players[0].last_move == MoveType.BET
 
+
 def test_player_make_invalid_move(game):
     with pytest.raises(KeyError):
         game.player_make_move("Tony Stark", "invalid_move")

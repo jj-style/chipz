@@ -1,3 +1,4 @@
+black==20.8b1
 eventlet==0.29.1
 flake8==3.8.4
 flask-cors==3.0.9
