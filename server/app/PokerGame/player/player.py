@@ -71,7 +71,9 @@ class Player:
 
 class PlayerList:
     def __init__(self, players=None):
-        self._players: List[Player] = list(players) if players is not None else []
+        self._players: List[Player] = (
+            list(players) if players is not None else []
+        )
 
     def __len__(self):
         return len(self._players)
@@ -80,7 +82,9 @@ class PlayerList:
         return iter(self._players)
 
     def __repr__(self):
-        return "PlayerList({})".format(repr(self._players) if self._players else "")
+        return "PlayerList({})".format(
+            repr(self._players) if self._players else ""
+        )
 
     def __getitem__(self, index) -> Player:
         result = self._players[index]
@@ -102,7 +106,9 @@ class PlayerList:
         raise ValueError(f"{player_name} is not in PlayerList")
 
     def remove(self, player_name: str) -> None:
-        self._players = [p for p in self._players if p.display_name != player_name]
+        self._players = [
+            p for p in self._players if p.display_name != player_name
+        ]
 
     def add(self, player: Player) -> None:
         self._players.append(player)

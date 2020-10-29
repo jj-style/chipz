@@ -1,6 +1,11 @@
 import pytest
 
-from app.PokerGame.game import NoBlindsPokerGame, BlindsPokerGame, PokerGame, MoveType
+from app.PokerGame.game import (
+    NoBlindsPokerGame,
+    BlindsPokerGame,
+    PokerGame,
+    MoveType,
+)
 
 
 @pytest.fixture

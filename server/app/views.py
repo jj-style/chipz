@@ -74,7 +74,9 @@ def game(room=None):
             game_data = request.get_json()
             print(game_data)
             try:
-                add_player_to_game(game_data["displayName"], game_data["gameCode"])
+                add_player_to_game(
+                    game_data["displayName"], game_data["gameCode"]
+                )
                 return jsonify(success=True)
             except ValueError as e:
                 return jsonify(str(e)), 400
