@@ -1,11 +1,17 @@
-import random, json, os
+import random
+import json
+import os
 from typing import Dict
 
-from flask import current_app as app
 from app import socketio
-from flask import request, jsonify, abort, make_response
+
+from flask import current_app as app
+from flask import request
+from flask import jsonify
 from flask_cors import cross_origin
-from flask_socketio import send, emit, join_room, leave_room
+from flask_socketio import emit
+from flask_socketio import join_room
+from flask_socketio import leave_room
 
 from app.PokerGame import PokerGame, NoBlindsPokerGame, BlindsPokerGame
 from app.PokerGame import Player, PlayerList
@@ -74,9 +80,7 @@ def game(room=None):
             game_data = request.get_json()
             print(game_data)
             try:
-                add_player_to_game(
-                    game_data["displayName"], game_data["gameCode"]
-                )
+                add_player_to_game(game_data["displayName"], game_data["gameCode"])
                 return jsonify(success=True)
             except ValueError as e:
                 return jsonify(str(e)), 400
@@ -88,7 +92,7 @@ def game(room=None):
                 ]
                 GAMES[room].remove_player(game_data["displayName"])
                 if (
-                    player_to_be_removed.dealer == True
+                    player_to_be_removed.dealer is True
                     and len(GAMES[room].players) >= 1
                 ):
                     GAMES[room].players[0].dealer = True
