@@ -88,50 +88,48 @@ const styles = StyleSheet.create({
   },
 });
 
-const PlayScreen = ({ gameData, contextProvider, token }) => {
+const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
   const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
+  //const minBet = gameData._min_bet TODO: make this real - need to talk about this with server too
   const [newBet, setNewBet] = useState(minBet);
 
-  function searchForPlayer(name, players) {
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].name === name) {
-        return players[i];
-      }
-    }
-  }
-  const thisPlayer = searchForPlayer(tmpState.thisPlayer, tmpState.players);
-  const chipStack = thisPlayer.chips;
-  const chipsOut = thisPlayer.infront;
+  const thisPlayer = gameData._players._players.find(
+    (obj) => obj._name === token.displayName
+  );
+  const chipStack = thisPlayer._chips;
 
   return (
     <View style={{ flex: 1, margin: 10, marginTop: 30 }}>
       <View style={styles.infoBox}>
         <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
+        <Text style={{ fontSize: 16 }}>
+          {gameData._players._players[gameData._players_turn]._name}'s turn
+        </Text>
       </View>
       <View style={styles.buttonGroup}>
         <StyledButton
           buttonText="Fold"
-          onPress={() => console.log("fold")}
+          onPress={() => makeMove("fold")}
           style={styles.bigButton}
           textStyle={styles.bigText}
         />
         {tmpState.lastBet === null ? (
           <StyledButton
             buttonText="Check"
-            onPress={() => console.log("check")}
+            onPress={() => makeMove("check")}
             style={styles.bigButton}
             textStyle={styles.bigText}
           />
         ) : (
           <StyledButton
             buttonText="Call"
-            onPress={() => console.log("call")}
+            onPress={() => makeMove("call")}
             style={styles.bigButton}
             textStyle={styles.bigText}
           />
         )}
         <TouchableHighlight
-          onPress={() => console.log("bet")}
+          onPress={() => makeMove("bet", newBet)}
           style={[styles.betButton]}
           underlayColor="#e6e6e6"
         >
@@ -288,6 +286,18 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     websocket.emit("GET_IN_GAME_INFO", token.gameCode);
   }, []);
 
+  const makeMove = (moveName, betAmount) => {
+    const is_my_turn =
+      gameData._players._players[gameData._players_turn]._name ===
+      token.displayName;
+    if (is_my_turn) {
+      console.log(`move ${moveName} ${betAmount ? betAmount : ""}`);
+    } else {
+      console.log("oi it's not your turn!!!");
+    }
+    // websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount||-1)
+  };
+
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
@@ -319,6 +329,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   contextProvider={contextProvider}
                   token={token}
                   gameData={gameData}
+                  makeMove={makeMove}
                 />
               )}
             </Tab.Screen>
