@@ -21,6 +21,8 @@ import { api } from "../api";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { SplashScreen } from "./SplashScreen";
 
+import { websocket } from "../socket";
+
 const tmpState = {
   pot: 20,
   smallBlind: 10,
@@ -276,27 +278,14 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
   const [gameData, setGameData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  websocket.off("GOT_GAME_INFO").on("GOT_GAME_INFO", (newdata) => {
+    console.log(newdata);
+    setGameData(JSON.parse(newdata));
+    setLoading(false);
+  });
+
   useEffect(() => {
-    fetch(`${api}/game/${token.gameCode}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw res.json();
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("game data found");
-        setGameData(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        error.then((e) => {
-          console.log(e.message);
-        });
-      });
+    websocket.emit("GET_IN_GAME_INFO", token.gameCode);
   }, []);
 
   return (

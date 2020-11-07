@@ -114,3 +114,15 @@ def test_start_round_blinds():
     assert game.pot == game.small_blind + game.big_blind
     assert game.players[2].chips_played == game.small_blind
     assert game.players[3].chips_played == game.big_blind
+
+
+def test_no_blinds_game_to_json(no_blind_game: NoBlindsPokerGame):
+    no_blind_game.players[0].dealer = True
+    no_blind_game.start_game()
+    no_blind_game.to_json()
+
+
+def test_blinds_game_to_json(game: BlindsPokerGame):
+    game.players[0].dealer = True
+    game.start_game()
+    game.to_json()

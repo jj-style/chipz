@@ -1,6 +1,7 @@
 from abc import ABC
 from datetime import datetime, timedelta
 import json
+from enum import Enum
 from .game_enums import MoveType
 from app.PokerGame.player import Player, PlayerList
 
@@ -70,10 +71,18 @@ class PokerGame(ABC):
                 break
 
     def to_json(self):
+        def default(x):
+            if isinstance(x, datetime):
+                return x.isoformat()
+            elif isinstance(x, Enum):
+                return x.name
+            else:
+                return x.__dict__
+
         full_dict = {**self.__dict__, **{"_pot": self.pot}}
         return json.dumps(
             full_dict,
-            default=lambda x: x.isoformat() if isinstance(x, datetime) else x.__dict__,
+            default=default,
         )
 
 
