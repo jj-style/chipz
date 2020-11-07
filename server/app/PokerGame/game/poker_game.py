@@ -2,7 +2,7 @@ from abc import ABC
 from datetime import datetime, timedelta
 import json
 from enum import Enum
-from .game_enums import MoveType
+from .game_enums import MoveType, RoundType
 from app.PokerGame.player import Player, PlayerList
 
 
@@ -12,16 +12,24 @@ class PokerGame(ABC):
         self._starting_chips = starting_chips
         self._started_at: datetime = None
         self._players_turn: int = None  # index to players of whose turn it is
+        self._round: RoundType = None
 
     def start_game(self):
+        """Anything that should happen ONCE the entire game"""
         self._started_at = datetime.now()
-        PokerGame.start_round(self)
 
-    def start_round(self):
-        print("SUPERRRR START ROUND")
+    def start_hand(self):
+        """Anything that should happen before the pre-flop each hand"""
+        self.start_round(1)
+
+    def start_round(self, round: int):
+        """Anything that should happen before the next stage within a hand"""
         self._players_turn = (self._players.dealer_idx + 1) % len(
             self._players
         )  # set left of dealer to go first
+        self._round = RoundType(round)
+        for player in self._players:
+            player.last_move = None
 
     @property
     def current_players_turn(self):
@@ -55,13 +63,16 @@ class PokerGame(ABC):
         idx = self.players.index(player_name)
         player = self.players[idx]
         player.move = MoveType[move.upper()]
-        player.chips_played += kwargs.get("bet", 0)
-        player.chips -= kwargs.get("bet", 0)
-        # TODO: need additional logic for folding and stuff
+        bet_amount = kwargs.get("bet", 0)
+        player.chips_played += bet_amount
+        player.chips -= bet_amount
         self._next_players_turn()  # move turn around
+        # TODO: need additional logic for folding and stuff
         # TODO: win round if 1 player left etc.
 
     def _next_players_turn(self):
+        """update pointer to current player by skipping over players who have folded"""
+        # TODO: do a thing like if didn't change then one player left so you won
         def move_one_player_round():
             self._players_turn = (self._players_turn + 1) % len(self._players)
 
@@ -117,16 +128,17 @@ class BlindsPokerGame(PokerGame):
             if self._blind_interval == 0
             else self._started_at + timedelta(minutes=self._blind_interval)
         )
-        self.start_round()
 
-    def start_round(self):
-        self.player_make_move(
-            self.players[self.current_players_turn].display_name,
-            "bet",
-            bet=self.small_blind,
-        )
-        self.player_make_move(
-            self.players[self.current_players_turn].display_name,
-            "bet",
-            bet=self.big_blind,
-        )
+    def start_round(self, round: int):
+        super().start_round(round)
+        if self._round == RoundType.PRE_FLOP:
+            self.player_make_move(
+                self.players[self.current_players_turn].display_name,
+                "bet",
+                bet=self.small_blind,
+            )
+            self.player_make_move(
+                self.players[self.current_players_turn].display_name,
+                "bet",
+                bet=self.big_blind,
+            )

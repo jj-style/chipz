@@ -62,6 +62,10 @@ class Player:
     def last_move(self) -> MoveType:
         return self._last_move
 
+    @last_move.setter
+    def last_move(self, new_last_move: MoveType) -> None:
+        self._last_move = new_last_move
+
     def __str__(self):
         return self._name
 

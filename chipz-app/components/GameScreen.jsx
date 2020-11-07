@@ -101,6 +101,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
   return (
     <View style={{ flex: 1, margin: 10, marginTop: 30 }}>
       <View style={styles.infoBox}>
+        <Text style={styles.infoBoxText}>{gameData._round}</Text>
         <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
         <Text style={{ fontSize: 16 }}>
           {gameData._players._players[gameData._players_turn]._name}'s turn
@@ -204,6 +205,8 @@ const PlayerStats = ({ info, thisPlayer }) => {
 
 const InfoScreen = ({ contextProvider, token, gameData }) => {
   const { leaveGame } = useContext(contextProvider);
+  const copyPlayers = [...gameData._players._players];
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.infoPlayers}>
@@ -216,7 +219,7 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
           Table Standings
         </Text>
         <FlatList
-          data={gameData._players._players.sort((a, b) => {
+          data={copyPlayers.sort((a, b) => {
             return b._chips - a._chips;
           })}
           renderItem={({ item }) => (
@@ -277,7 +280,6 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
   const [loading, setLoading] = useState(true);
 
   websocket.off("GOT_GAME_INFO").on("GOT_GAME_INFO", (newdata) => {
-    console.log(newdata);
     setGameData(JSON.parse(newdata));
     setLoading(false);
   });

@@ -156,6 +156,7 @@ def end_game(room):
 def start_game(room):
     print("Starting game for " + room)
     GAMES[room].start_game()
+    GAMES[room].start_hand()
     emit("STARTGAME", room=room)
 
 
