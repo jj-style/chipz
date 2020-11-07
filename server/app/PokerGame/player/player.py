@@ -117,3 +117,8 @@ class PlayerList:
             if player.dealer:
                 return player
         return None
+
+    @property
+    def dealer_idx(self) -> int:
+        dealer = self.dealer
+        return dealer if dealer is None else self.index(dealer.display_name)

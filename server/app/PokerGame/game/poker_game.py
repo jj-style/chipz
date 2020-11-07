@@ -10,9 +10,21 @@ class PokerGame(ABC):
         self._players = PlayerList()
         self._starting_chips = starting_chips
         self._started_at: datetime = None
+        self._players_turn: int = None  # index to players of whose turn it is
 
     def start_game(self):
         self._started_at = datetime.now()
+        PokerGame.start_round(self)
+
+    def start_round(self):
+        print("SUPERRRR START ROUND")
+        self._players_turn = (self._players.dealer_idx + 1) % len(
+            self._players
+        )  # set left of dealer to go first
+
+    @property
+    def current_players_turn(self):
+        return self._players_turn
 
     @property
     def starting_chips(self) -> int:
@@ -45,6 +57,17 @@ class PokerGame(ABC):
         player.chips_played += kwargs.get("bet", 0)
         player.chips -= kwargs.get("bet", 0)
         # TODO: need additional logic for folding and stuff
+        self._next_players_turn()  # move turn around
+        # TODO: win round if 1 player left etc.
+
+    def _next_players_turn(self):
+        def move_one_player_round():
+            self._players_turn = (self._players_turn + 1) % len(self._players)
+
+        while True:
+            move_one_player_round()
+            if not self.players[self.current_players_turn].last_move == MoveType.FOLD:
+                break
 
     def to_json(self):
         full_dict = {**self.__dict__, **{"_pot": self.pot}}
@@ -84,4 +107,17 @@ class BlindsPokerGame(PokerGame):
             None
             if self._blind_interval == 0
             else self._started_at + timedelta(minutes=self._blind_interval)
+        )
+        self.start_round()
+
+    def start_round(self):
+        self.player_make_move(
+            self.players[self.current_players_turn].display_name,
+            "bet",
+            bet=self.small_blind,
+        )
+        self.player_make_move(
+            self.players[self.current_players_turn].display_name,
+            "bet",
+            bet=self.big_blind,
         )
