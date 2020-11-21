@@ -9,6 +9,7 @@ class Player:
         self._name: str = name
         self._chips: int = chips
         self._last_move: MoveType = None
+        self._last_bet: int = 0
         self._chips_played: int = 0
         self._dealer: bool = dealer
 
@@ -35,6 +36,14 @@ class Player:
         self._last_move = value
 
     @property
+    def last_bet(self) -> int:
+        return self._last_bet
+
+    @last_bet.setter
+    def last_bet(self, new_value: int):
+        self._last_bet = new_value
+
+    @property
     def dealer(self) -> bool:
         return self._dealer
 
@@ -58,13 +67,14 @@ class Player:
     def chips(self, new_chips: int) -> None:
         self._chips = new_chips
 
-    @property
-    def last_move(self) -> MoveType:
-        return self._last_move
+    def make_a_bet(self, amount: int) -> None:
+        self.chips_played += amount
+        self.chips -= amount
+        self.last_bet = amount
 
-    @last_move.setter
-    def last_move(self, new_last_move: MoveType) -> None:
-        self._last_move = new_last_move
+    @property
+    def is_all_in(self) -> bool:
+        return self.chips == 0 and self.chips_played > 0
 
     def __str__(self):
         return self._name

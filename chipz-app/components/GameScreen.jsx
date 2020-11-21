@@ -101,13 +101,19 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
 
   const [newBet, setNewBet] = useState(minBet);
 
+  const players_turn_name =
+    gameData._players._players[gameData._players_turn]._name;
+
   return (
     <View style={{ flex: 1, margin: 10, marginTop: 30 }}>
       <View style={styles.infoBox}>
         <Text style={styles.infoBoxText}>{gameData._round}</Text>
         <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
         <Text style={{ fontSize: 16 }}>
-          {gameData._players._players[gameData._players_turn]._name}'s turn
+          {token.displayName === players_turn_name
+            ? "Your"
+            : players_turn_name + "'s"}{" "}
+          turn
         </Text>
       </View>
       <View style={styles.buttonGroup}>
@@ -117,7 +123,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           style={styles.bigButton}
           textStyle={styles.bigText}
         />
-        {tmpState.lastBet === null ? (
+        {thisPlayer._last_bet === gameData._last_bet ? (
           <StyledButton
             buttonText="Check"
             onPress={() => makeMove("check")}
@@ -126,7 +132,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           />
         ) : (
           <StyledButton
-            buttonText="Call"
+            buttonText={`Call ${gameData._last_bet - thisPlayer._last_bet}`}
             onPress={() => makeMove("call")}
             style={styles.bigButton}
             textStyle={styles.bigText}

@@ -30,8 +30,11 @@ class PokerGame(ABC):
             self._players
         )  # set left of dealer to go first
         self._round = RoundType(round)
+        self._last_bet = 0
         for player in self._players:
-            player.last_move = None
+            if player.move != MoveType.FOLD:
+                player.move = None
+                player.last_bet = 0
 
     @property
     def min_raise(self) -> int:
@@ -73,17 +76,25 @@ class PokerGame(ABC):
         idx = self.players.index(player_name)
         player = self.players[idx]
         player.move = MoveType[move.upper()]
-        bet_amount = kwargs.get("bet", 0)
-        player.chips_played += bet_amount
-        player.chips -= bet_amount
-        self._next_players_turn()  # move turn around
+        if player.move == MoveType.BET:
+            bet_amount = kwargs.get("bet", 0)
+            player.make_a_bet(bet_amount)
+
+            if bet_amount > 0:
+                # need to update min_raise
+                self._min_raise = bet_amount + (bet_amount - self._last_bet)
+                self._last_bet = bet_amount
+
         # TODO: need additional logic for folding and stuff
         # TODO: win round if 1 player left etc.
+        elif player.move == MoveType.CALL:
+            player.make_a_bet(self._last_bet - player.last_bet)
 
-        if bet_amount > 0:
-            # need to update min_raise
-            self._min_raise = bet_amount + (bet_amount - self._last_bet)
-            self._last_bet = bet_amount
+        if self.end_of_round:
+            self._round = RoundType(self._round.value + 1)
+            self.start_round(self._round)
+        else:
+            self._next_players_turn()  # move turn around
 
     def _next_players_turn(self):
         """update pointer to current player by skipping over players who have folded"""
@@ -93,8 +104,25 @@ class PokerGame(ABC):
 
         while True:
             move_one_player_round()
-            if not self.players[self.current_players_turn].last_move == MoveType.FOLD:
+            if not self.players[self.current_players_turn].move == MoveType.FOLD:
                 break
+
+    @property
+    def end_of_round(self) -> bool:
+        """Determines if it is the end of the current round of betting.
+
+        E.g. it should move from pre-flop to flop, flop to river etc.
+
+        Returns:
+            bool: whether the round has eneded
+        """
+        max_chips = max(self.players, key=lambda x: x.chips_played).chips_played
+        for player in self.players:
+            if player.move != MoveType.FOLD and (
+                player.chips_played != max_chips and not player.is_all_in
+            ):
+                return False
+        return True
 
     def to_json(self):
         def default(x):
@@ -166,5 +194,8 @@ class BlindsPokerGame(PokerGame):
             self._min_raise = (
                 self.big_blind * 2
             )  # special case for min raise after blinds
+            self.players[
+                (self.current_players_turn - 1) % len(self.players)
+            ].move = None  # give bb chance to check or bet when it comes back round
         else:
             self._min_raise = self.big_blind

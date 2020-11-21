@@ -171,4 +171,4 @@ def make_move(room, move: str, bet_amount: int):
         GAMES[room].current_player_make_move(move, bet=bet_amount)
     else:
         GAMES[room].current_player_make_move(move)
-    emit("GOT_GAME_INFO", GAMES[room].to_json())
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
