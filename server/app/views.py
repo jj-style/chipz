@@ -163,3 +163,12 @@ def start_game(room):
 @socketio.on("GET_IN_GAME_INFO")
 def get_in_game_info(room):
     emit("GOT_GAME_INFO", GAMES[room].to_json())
+
+
+@socketio.on("MAKE_MOVE")
+def make_move(room, move: str, bet_amount: int):
+    if bet_amount != -1:
+        GAMES[room].current_player_make_move(move, bet=bet_amount)
+    else:
+        GAMES[room].current_player_make_move(move)
+    emit("GOT_GAME_INFO", GAMES[room].to_json())

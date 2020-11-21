@@ -11,8 +11,10 @@ class PokerGame(ABC):
         self._players = PlayerList()
         self._starting_chips = starting_chips
         self._started_at: datetime = None
-        self._players_turn: int = None  # index to players of whose turn it is
+        self._players_turn: int = -1  # index to players of whose turn it is
         self._round: RoundType = None
+        self._min_raise: int = -1
+        self._last_bet: int = -1
 
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
@@ -30,6 +32,10 @@ class PokerGame(ABC):
         self._round = RoundType(round)
         for player in self._players:
             player.last_move = None
+
+    @property
+    def min_raise(self) -> int:
+        return self._min_raise
 
     @property
     def current_players_turn(self):
@@ -59,6 +65,10 @@ class PokerGame(ABC):
     def remove_player(self, player_name: str) -> None:
         self._players.remove(player_name)
 
+    def current_player_make_move(self, move: str, **kwargs) -> None:
+        name_of_current_player = self.players[self._players_turn].display_name
+        self.player_make_move(name_of_current_player, move, **kwargs)
+
     def player_make_move(self, player_name: str, move: str, **kwargs) -> None:
         idx = self.players.index(player_name)
         player = self.players[idx]
@@ -69,6 +79,11 @@ class PokerGame(ABC):
         self._next_players_turn()  # move turn around
         # TODO: need additional logic for folding and stuff
         # TODO: win round if 1 player left etc.
+
+        if bet_amount > 0:
+            # need to update min_raise
+            self._min_raise = bet_amount + (bet_amount - self._last_bet)
+            self._last_bet = bet_amount
 
     def _next_players_turn(self):
         """update pointer to current player by skipping over players who have folded"""
@@ -121,16 +136,22 @@ class BlindsPokerGame(PokerGame):
     def blind_interval(self):
         return self._blind_interval
 
-    def start_game(self):
-        super().start_game()
+    def set_blinds_up_at(self):
         self._blinds_up_at = (
             None
-            if self._blind_interval == 0
+            if self.blind_interval == 0
             else self._started_at + timedelta(minutes=self._blind_interval)
+            if self._started_at is None
+            else datetime.now() + timedelta(minutes=self._blind_interval)
         )
+
+    def start_game(self):
+        super().start_game()
+        self.set_blinds_up_at()
 
     def start_round(self, round: int):
         super().start_round(round)
+        # if pre-flop is starting small blind and big blind put down their bet
         if self._round == RoundType.PRE_FLOP:
             self.player_make_move(
                 self.players[self.current_players_turn].display_name,
@@ -142,3 +163,8 @@ class BlindsPokerGame(PokerGame):
                 "bet",
                 bet=self.big_blind,
             )
+            self._min_raise = (
+                self.big_blind * 2
+            )  # special case for min raise after blinds
+        else:
+            self._min_raise = self.big_blind

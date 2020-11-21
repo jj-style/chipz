@@ -89,14 +89,17 @@ const styles = StyleSheet.create({
 });
 
 const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
-  const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
+  // const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
   //const minBet = gameData._min_bet TODO: make this real - need to talk about this with server too
-  const [newBet, setNewBet] = useState(minBet);
 
   const thisPlayer = gameData._players._players.find(
     (obj) => obj._name === token.displayName
   );
   const chipStack = thisPlayer._chips;
+  const minBet =
+    gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
+
+  const [newBet, setNewBet] = useState(minBet);
 
   return (
     <View style={{ flex: 1, margin: 10, marginTop: 30 }}>
@@ -280,6 +283,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
   const [loading, setLoading] = useState(true);
 
   websocket.off("GOT_GAME_INFO").on("GOT_GAME_INFO", (newdata) => {
+    // console.log(newdata);
     setGameData(JSON.parse(newdata));
     setLoading(false);
   });
@@ -297,7 +301,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     } else {
       console.log("oi it's not your turn!!!");
     }
-    // websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount||-1)
+    websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
   };
 
   return (
