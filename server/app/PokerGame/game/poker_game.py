@@ -78,7 +78,10 @@ class PokerGame(ABC):
         player.move = MoveType[move.upper()]
         if player.move == MoveType.BET:
             bet_amount = kwargs.get("bet", 0)
-            player.make_a_bet(bet_amount)
+            if self._last_bet == 0 or kwargs.get("blinds"):
+                player.make_a_bet(bet_amount)  # bet
+            else:
+                player.make_a_bet(bet_amount - player.last_bet)  # raise
 
             if bet_amount > 0:
                 # need to update min_raise
@@ -192,11 +195,13 @@ class BlindsPokerGame(PokerGame):
                 self.players[self.current_players_turn].display_name,
                 "bet",
                 bet=self.small_blind,
+                blinds=True,
             )
             self.player_make_move(
                 self.players[self.current_players_turn].display_name,
                 "bet",
                 bet=self.big_blind,
+                blinds=True,
             )
             self._min_raise = (
                 self.big_blind * 2
