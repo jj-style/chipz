@@ -162,7 +162,7 @@ def start_game(room):
 
 @socketio.on("GET_IN_GAME_INFO")
 def get_in_game_info(room):
-    emit("GOT_GAME_INFO", GAMES[room].to_json())
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
 
 
 @socketio.on("MAKE_MOVE")

@@ -99,7 +99,10 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
   const minBet =
     gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
 
-  const [newBet, setNewBet] = useState(minBet);
+  const [newBet, setNewBet] = useState(0);
+  useEffect(() => {
+    setNewBet(minBet);
+  }, [minBet]);
 
   const players_turn_name =
     gameData._players._players[gameData._players_turn]._name;
