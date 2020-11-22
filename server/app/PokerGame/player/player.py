@@ -80,7 +80,8 @@ class Player:
         return self._name
 
     def __repr__(self):
-        return f"Player(name={self._name}, chips={self._chips})"
+        return f"Player(name={self._name}, chips={self._chips}, \
+played={self._chips_played}, last_bet={self._last_bet})"
 
 
 class PlayerList:

@@ -9,7 +9,7 @@ def test_player_create():
     assert player.chips == 1000
     assert player.display_name == "Tony Stark"
     assert player.chips_played == 0
-    assert player.last_move is None
+    assert player.move is None
     assert player.dealer is False
 
 

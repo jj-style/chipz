@@ -118,11 +118,18 @@ class PokerGame(ABC):
         """
         max_chips = max(self.players, key=lambda x: x.chips_played).chips_played
         for player in self.players:
-            if player.move != MoveType.FOLD and (
-                player.chips_played != max_chips and not player.is_all_in
-            ):
+            if (
+                player.move is None
+            ):  # if a player hasn't played a move can't be end of round
                 return False
+            elif player.move != MoveType.FOLD:
+                if player.chips_played != max_chips and not player.is_all_in:
+                    return False
         return True
+
+    @property
+    def round(self) -> RoundType:
+        return self._round
 
     def to_json(self):
         def default(x):
