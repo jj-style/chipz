@@ -310,6 +310,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
   };
 
+  // TODO: if roundtype is showdown then return select winner screen not tab navigation
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
