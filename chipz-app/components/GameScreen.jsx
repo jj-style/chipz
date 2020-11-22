@@ -166,7 +166,9 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
                 buttonText="1/2 Pot"
                 onPress={() => {
                   setNewBet(
-                    tmpState.pot / 2 <= chipStack ? tmpState.pot / 2 : chipStack
+                    Math.ceil(gameData._pot / 2) <= chipStack
+                      ? Math.ceil(gameData._pot / 2)
+                      : chipStack
                   );
                 }}
                 style={{ width: "17%" }}
@@ -176,7 +178,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
                 buttonText="Pot"
                 onPress={() => {
                   setNewBet(
-                    tmpState.pot <= chipStack ? tmpState.pot : chipStack
+                    gameData._pot <= chipStack ? gameData._pot : chipStack
                   );
                 }}
                 style={{ width: "17%" }}
