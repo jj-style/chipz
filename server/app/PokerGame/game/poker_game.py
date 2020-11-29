@@ -110,7 +110,10 @@ class PokerGame(ABC):
 
         elif player.move == MoveType.FOLD:
             if self.end_of_hand:
-                print("end of hand")
+                # player who hasn't folded wins the pot
+                self.win_pot(
+                    [p for p in self.players if p.move != MoveType.FOLD][0].display_name
+                )
                 self.start_hand()
                 return
 
@@ -163,6 +166,20 @@ class PokerGame(ABC):
     @property
     def round(self) -> RoundType:
         return self._round
+
+    def win_pot(self, player_name: str) -> None:
+        winner = self.players[self.players.index(player_name)]
+        for player in self.players:
+            # for all other players - make their bets no bigger than the winner's
+            if player.display_name != player_name:
+                if player.chips_played > winner.chips_played:
+                    diff = player.chips_played - winner.chips_played
+                    player.chips_played -= diff
+                    player.chips += diff
+
+        winner.chips += self.pot
+        for player in self.players:
+            player.chips_played = 0
 
     def to_json(self):
         def default(x):

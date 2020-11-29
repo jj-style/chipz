@@ -201,3 +201,27 @@ def test_hand_ends_when_all_bar_one_player_folds():
     assert game.current_players_turn == 0
     game.current_player_make_move("fold")
     assert game.round == RoundType.PRE_FLOP
+
+
+def test_player_wins_money_when_others_all_fold():
+    game = BlindsPokerGame(1000, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # sb first to go
+    game.add_player("Peter Parker", is_dealer=True)  # dealer bb
+    game.start_game()
+    game.start_hand()
+
+    game.current_player_make_move("call")
+    assert game.round == RoundType.PRE_FLOP
+    game.current_player_make_move("check")
+    assert game.round == RoundType.FLOP
+    game.current_player_make_move("bet", bet=100)
+    game.current_player_make_move("call")
+    assert game.round == RoundType.TURN
+    game.current_player_make_move("bet", bet=250)
+    game.current_player_make_move("fold")
+
+    assert game.round == RoundType.PRE_FLOP
+
+    matching_pot = 240
+    assert game.players[0].chips == 1000 + (matching_pot / 2) - 20
+    assert game.players[1].chips == 1000 - (matching_pot / 2) - 10
