@@ -67,9 +67,6 @@ def test_player_make_valid_move(no_blind_game: NoBlindsPokerGame):
     no_blind_game.add_player("Peter Parker", False)
     no_blind_game.player_make_move("Tony Stark", "fold")
 
-    assert no_blind_game.players[0].move == MoveType.FOLD
-    assert no_blind_game.current_players_turn == 1
-
 
 def test_player_make_invalid_move(no_blind_game: NoBlindsPokerGame):
     no_blind_game.players[0].dealer = True
@@ -182,3 +179,25 @@ def test_gameplay():
     game.current_player_make_move("check")
     # can't check player's last moves as will be reset as we should expect new round
     assert game.round == RoundType.FLOP
+
+
+def test_hand_ends_when_all_bar_one_player_folds():
+    game = BlindsPokerGame(1000, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # bb
+    game.add_player("Peter Parker", is_dealer=True)  # dealer first to go
+    game.add_player("Bruce Banner", is_dealer=False)  # sb
+    game.start_game()
+    game.start_hand()
+
+    assert game.current_players_turn == 1
+    game.current_player_make_move("call")
+    assert game.current_players_turn == 2
+    game.current_player_make_move("fold")
+    assert game.end_of_hand is False
+    assert game.round == RoundType.PRE_FLOP
+    assert game.current_players_turn == 0
+    game.current_player_make_move("check")
+    assert game.round == RoundType.FLOP
+    assert game.current_players_turn == 0
+    game.current_player_make_move("fold")
+    assert game.round == RoundType.PRE_FLOP

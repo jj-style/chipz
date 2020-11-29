@@ -81,7 +81,7 @@ class Player:
 
     def __repr__(self):
         return f"Player(name={self._name}, chips={self._chips}, \
-played={self._chips_played}, last_bet={self._last_bet})"
+played={self._chips_played}, last_bet={self._last_bet}, dealer={self.dealer})"
 
 
 class PlayerList:
@@ -123,7 +123,7 @@ class PlayerList:
         self._players.append(player)
 
     @property
-    def players(self):
+    def players(self) -> List:
         return self._players
 
     @property
@@ -136,4 +136,9 @@ class PlayerList:
     @property
     def dealer_idx(self) -> int:
         dealer = self.dealer
-        return dealer if dealer is None else self.index(dealer.display_name)
+        return None if dealer is None else self.index(dealer.display_name)
+
+    def move_dealer(self, inc: int) -> None:
+        current_dealer_idx = self.dealer_idx
+        self[current_dealer_idx].dealer = False
+        self[(current_dealer_idx + inc) % len(self)].dealer = True

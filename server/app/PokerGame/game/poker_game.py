@@ -19,29 +19,44 @@ class PokerGame(ABC):
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
         self._started_at = datetime.now()
+        self.players.move_dealer(
+            -1
+        )  # move dealer back so when starting a hand we move round
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
+        self.players.move_dealer(1)
         self.start_round(1)
 
     def start_round(self, round: int):
         """Anything that should happen before the next stage within a hand"""
-        self._players_turn = (self._players.dealer_idx + 1) % len(
-            self._players
-        )  # set left of dealer to go first
         self._round = RoundType(round)
         self._last_bet = 0
         for player in self._players:
-            if player.move != MoveType.FOLD:
+            if player.move != MoveType.FOLD or round == 1:
                 player.move = None
                 player.last_bet = 0
+
+        # select first left of dealer who hasn't folded to start round
+        valid_next_player = False
+        inc = 0
+        while not valid_next_player:
+            inc += 1
+            self._players_turn = (self._players.dealer_idx + inc) % len(
+                self._players
+            )  # set left of dealer to go first
+            valid_next_player = (
+                True
+                if self.players[self.current_players_turn].move != MoveType.FOLD
+                else False
+            )
 
     @property
     def min_raise(self) -> int:
         return self._min_raise
 
     @property
-    def current_players_turn(self):
+    def current_players_turn(self) -> int:
         return self._players_turn
 
     @property
@@ -93,6 +108,12 @@ class PokerGame(ABC):
         elif player.move == MoveType.CALL:
             player.make_a_bet(self._last_bet - player.last_bet)
 
+        elif player.move == MoveType.FOLD:
+            if self.end_of_hand:
+                print("end of hand")
+                self.start_hand()
+                return
+
         if self.end_of_round:
             self._round = RoundType(self._round.value + 1)
             self.start_round(self._round)
@@ -117,7 +138,7 @@ class PokerGame(ABC):
         E.g. it should move from pre-flop to flop, flop to river etc.
 
         Returns:
-            bool: whether the round has eneded
+            bool: whether the round has ended
         """
         max_chips = max(self.players, key=lambda x: x.chips_played).chips_played
         for player in self.players:
@@ -129,6 +150,15 @@ class PokerGame(ABC):
                 if player.chips_played != max_chips and not player.is_all_in:
                     return False
         return True
+
+    @property
+    def end_of_hand(self) -> bool:
+        """Determines if the hand is over because all bar one player has folded
+
+        Returns:
+            bool: whether the hand has ended
+        """
+        return len([p for p in self.players if p.move != MoveType.FOLD]) == 1
 
     @property
     def round(self) -> RoundType:
