@@ -287,6 +287,27 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
   );
 };
 
+const StartHand = ({ token, gameData, startHand }) => {
+  const dealerPlayer = gameData._players._players.find(
+    (o) => o._dealer === true
+  );
+  const isDealer = dealerPlayer._name === token.displayName;
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      {isDealer ? (
+        <StyledButton
+          buttonText="Start Hand"
+          onPress={startHand}
+          style={styles.bigButton}
+          textStyle={styles.bigText}
+        />
+      ) : (
+        <Text>Waiting for dealer to start the hand</Text>
+      )}
+    </View>
+  );
+};
+
 const Tab = createBottomTabNavigator();
 
 export const GameScreen = ({ navigation, contextProvider, token }) => {
@@ -315,6 +336,10 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
   };
 
+  const startHand = () => {
+    websocket.emit("STARTHAND", token.gameCode);
+  };
+
   // TODO: if roundtype is showdown then return select winner screen not tab navigation
   return (
     <NavigationContainer independent={true}>
@@ -327,6 +352,10 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
               iconName = focused ? "cards" : "cards-outline";
             } else if (route.name === "Info") {
               iconName = focused ? "account-group" : "account-group-outline";
+            } else if (route.name === "Start") {
+              iconName = focused ? "clock" : "clock-outline";
+            } else if (route.name === "Log") {
+              iconName = focused ? "file-document" : "file-document-outline";
             }
             return <Icon name={iconName} size={size} color={color} />;
           },
@@ -340,17 +369,30 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
           <Tab.Screen name="Loading" component={SplashScreen} />
         ) : (
           <>
-            <Tab.Screen name="Play">
-              {(props) => (
-                <PlayScreen
-                  {...props}
-                  contextProvider={contextProvider}
-                  token={token}
-                  gameData={gameData}
-                  makeMove={makeMove}
-                />
-              )}
-            </Tab.Screen>
+            {gameData._round === "PRE_HAND" ? (
+              <Tab.Screen name="Start">
+                {(props) => (
+                  <StartHand
+                    {...props}
+                    token={token}
+                    gameData={gameData}
+                    startHand={startHand}
+                  />
+                )}
+              </Tab.Screen>
+            ) : (
+              <Tab.Screen name="Play">
+                {(props) => (
+                  <PlayScreen
+                    {...props}
+                    contextProvider={contextProvider}
+                    token={token}
+                    gameData={gameData}
+                    makeMove={makeMove}
+                  />
+                )}
+              </Tab.Screen>
+            )}
             <Tab.Screen name="Info">
               {(props) => (
                 <InfoScreen

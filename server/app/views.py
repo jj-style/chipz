@@ -156,8 +156,14 @@ def end_game(room):
 def start_game(room):
     print("Starting game for " + room)
     GAMES[room].start_game()
-    GAMES[room].start_hand()
     emit("STARTGAME", room=room)
+
+
+@socketio.on("STARTHAND")
+def start_hand(room):
+    print("Starting hand for " + room)
+    GAMES[room].start_hand()
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
 
 
 @socketio.on("GET_IN_GAME_INFO")

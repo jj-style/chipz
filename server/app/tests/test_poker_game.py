@@ -200,7 +200,7 @@ def test_hand_ends_when_all_bar_one_player_folds():
     assert game.round == RoundType.FLOP
     assert game.current_players_turn == 0
     game.current_player_make_move("fold")
-    assert game.round == RoundType.PRE_FLOP
+    assert game.round == RoundType.PRE_HAND
 
 
 def test_player_wins_money_when_others_all_fold():
@@ -220,8 +220,8 @@ def test_player_wins_money_when_others_all_fold():
     game.current_player_make_move("bet", bet=250)
     game.current_player_make_move("fold")
 
-    assert game.round == RoundType.PRE_FLOP
+    assert game.round == RoundType.PRE_HAND
 
     matching_pot = 240
-    assert game.players[0].chips == 1000 + (matching_pot / 2) - 20
-    assert game.players[1].chips == 1000 - (matching_pot / 2) - 10
+    assert game.players[0].chips == 1000 + (matching_pot / 2)
+    assert game.players[1].chips == 1000 - (matching_pot / 2)

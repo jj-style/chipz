@@ -19,13 +19,10 @@ class PokerGame(ABC):
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
         self._started_at = datetime.now()
-        self.players.move_dealer(
-            -1
-        )  # move dealer back so when starting a hand we move round
+        self._round = RoundType(0)  # set round to pre_hand
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
-        self.players.move_dealer(1)
         self.start_round(1)
 
     def start_round(self, round: int):
@@ -114,7 +111,9 @@ class PokerGame(ABC):
                 self.win_pot(
                     [p for p in self.players if p.move != MoveType.FOLD][0].display_name
                 )
-                self.start_hand()
+                # self.start_hand()
+                self._round = RoundType(0)
+                self.players.move_dealer(1)
                 return
 
         if self.end_of_round:
