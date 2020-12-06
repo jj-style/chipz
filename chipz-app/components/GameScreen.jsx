@@ -130,7 +130,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           style={styles.bigButton}
           textStyle={styles.bigText}
         />
-        {thisPlayer._last_bet === gameData._last_bet ? (
+        {thisPlayer._last_bet === gameData._last_bet ? ( // TODO: need some logic here. DOn't want to show half the call if a player calls
           <StyledButton
             buttonText="Check"
             onPress={() => makeMove("check")}
