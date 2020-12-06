@@ -4,6 +4,7 @@ import json
 from enum import Enum
 from .game_enums import MoveType, RoundType
 from app.PokerGame.player import Player, PlayerList
+from app.PokerGame.logger.game_logger import GameLogger
 
 
 class PokerGame(ABC):
@@ -15,6 +16,7 @@ class PokerGame(ABC):
         self._round: RoundType = None
         self._min_raise: int = -1
         self._last_bet: int = -1
+        self._logger: GameLogger = GameLogger()
 
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
@@ -93,6 +95,9 @@ class PokerGame(ABC):
             if self._last_bet == 0 or kwargs.get("blinds"):
                 player.make_a_bet(bet_amount)  # bet
             else:
+                self._logger.msg(
+                    f"{player.display_name} bets £{bet_amount - player.last_bet}", True
+                )
                 player.make_a_bet(bet_amount - player.last_bet)  # raise
 
             if bet_amount > 0:
@@ -103,9 +108,13 @@ class PokerGame(ABC):
         # TODO: need additional logic for folding and stuff
         # TODO: win round if 1 player left etc.
         elif player.move == MoveType.CALL:
+            self._logger.msg(
+                f"{player.display_name} calls £{self._last_bet - player.last_bet}", True
+            )
             player.make_a_bet(self._last_bet - player.last_bet)
 
         elif player.move == MoveType.FOLD:
+            self._logger.msg(f"{player.display_name} folds", True)
             if self.end_of_hand:
                 # player who hasn't folded wins the pot
                 self.win_pot(
@@ -115,6 +124,9 @@ class PokerGame(ABC):
                 self._round = RoundType(0)
                 self.players.move_dealer(1)
                 return
+
+        elif player.move == MoveType.CHECK:
+            self._logger.msg(f"{player.display_name} checks", True)
 
         if self.end_of_round:
             self._round = RoundType(self._round.value + 1)
@@ -176,6 +188,7 @@ class PokerGame(ABC):
                     player.chips_played -= diff
                     player.chips += diff
 
+        self._logger.msg(f"{player_name} wins pot of £{self.pot}", True)
         winner.chips += self.pot
         for player in self.players:
             player.chips_played = 0
@@ -186,6 +199,8 @@ class PokerGame(ABC):
                 return x.isoformat()
             elif isinstance(x, Enum):
                 return x.name
+            elif isinstance(x, GameLogger):
+                return x.user_logs()
             else:
                 return x.__dict__
 

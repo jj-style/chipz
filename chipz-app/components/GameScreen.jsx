@@ -6,6 +6,7 @@ import {
   TouchableHighlight,
   Slider,
   FlatList,
+  SafeAreaView,
 } from "react-native";
 
 import * as gStyle from "./globalStyle";
@@ -85,6 +86,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginLeft: 10,
     marginRight: 10,
+  },
+  logItem: {
+    fontSize: 16,
   },
 });
 
@@ -308,6 +312,33 @@ const StartHand = ({ token, gameData, startHand }) => {
   );
 };
 
+const LogItem = ({ data }) => {
+  console.log(data);
+  const formattedDate = new Date(data.time).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <View style={styles.logItem}>
+      <Text>
+        [{formattedDate}] - {data.message}
+      </Text>
+    </View>
+  );
+};
+
+const LogScreen = ({ logMessages }) => {
+  return (
+    <SafeAreaView style={{ flex: 1, marginLeft: 20, marginTop: 40 }}>
+      <FlatList
+        data={logMessages}
+        renderItem={(item) => <LogItem data={item.item} />}
+        keyExtractor={(_, index) => `logMsg-${index}`}
+      />
+    </SafeAreaView>
+  );
+};
+
 const Tab = createBottomTabNavigator();
 
 export const GameScreen = ({ navigation, contextProvider, token }) => {
@@ -401,6 +432,11 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   token={token}
                   gameData={gameData}
                 />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="Log">
+              {(props) => (
+                <LogScreen {...props} logMessages={gameData._logger} />
               )}
             </Tab.Screen>
           </>
