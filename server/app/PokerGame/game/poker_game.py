@@ -93,6 +93,8 @@ class PokerGame(ABC):
         if player.move == MoveType.BET:
             bet_amount = kwargs.get("bet", 0)
             if self._last_bet == 0 or kwargs.get("blinds"):
+                if not kwargs.get("blinds"):
+                    self._logger.msg(f"{player.display_name} bets £{bet_amount}", True)
                 player.make_a_bet(bet_amount)  # bet
             else:
                 self._logger.msg(
