@@ -93,15 +93,20 @@ const styles = StyleSheet.create({
 });
 
 const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
-  // const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
-  //const minBet = gameData._min_bet TODO: make this real - need to talk about this with server too
-
   const thisPlayer = gameData._players._players.find(
     (obj) => obj._name === token.displayName
   );
   const chipStack = thisPlayer._chips;
   const minBet =
     gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
+
+  var betButtonText = "Bet";
+  if (gameData._last_bet > 0) {
+    betButtonText = "Raise to";
+  }
+  if (minBet === chipStack) {
+    betButtonText = "All in";
+  }
 
   const [newBet, setNewBet] = useState(0);
   useEffect(() => {
@@ -130,7 +135,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           style={styles.bigButton}
           textStyle={styles.bigText}
         />
-        {thisPlayer._last_bet === gameData._last_bet ? ( // TODO: need some logic here. DOn't want to show half the call if a player calls
+        {thisPlayer._last_bet === gameData._last_bet ? (
           <StyledButton
             buttonText="Check"
             onPress={() => makeMove("check")}
@@ -151,11 +156,13 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           underlayColor="#e6e6e6"
         >
           <View style={{ width: "100%", alignItems: "center" }}>
-            <Text style={{ fontSize: 18 }}>Bet: £{newBet}</Text>
+            <Text style={{ fontSize: 18 }}>
+              {betButtonText}: £{newBet}
+            </Text>
             <Slider
-              minimumValue={minBet} // TODO: will need to recalculate this
-              maximumValue={chipStack} // TODO: max will be find the player then their stack
-              step={minBet} // TODO: and this
+              minimumValue={minBet}
+              maximumValue={chipStack}
+              step={minBet}
               onValueChange={(n) => setNewBet(n)}
               value={newBet}
               style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
@@ -313,7 +320,6 @@ const StartHand = ({ token, gameData, startHand }) => {
 };
 
 const LogItem = ({ data }) => {
-  console.log(data);
   const formattedDate = new Date(data.time).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",

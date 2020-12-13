@@ -98,7 +98,9 @@ class PokerGame(ABC):
                 player.make_a_bet(bet_amount)  # bet
             else:
                 self._logger.msg(
-                    f"{player.display_name} bets £{bet_amount - player.last_bet}", True
+                    f"""{player.display_name} raises £{bet_amount - player.last_bet} to \
+£{bet_amount}""",
+                    True,
                 )
                 player.make_a_bet(bet_amount - player.last_bet)  # raise
 

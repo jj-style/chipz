@@ -167,7 +167,7 @@ def test_gameplay():
     # BB calls 10 (as is small blind)
     assert game.current_players_turn == 2
     game.current_player_make_move("call")
-    assert game.players[2].last_bet == 10
+    assert game.players[2].last_bet == 20
     assert game.players[2].move == MoveType.CALL
 
     # Still pre-flop as bb needs to check of bet
@@ -238,7 +238,7 @@ def test_gameplay_2():
     # TS calls to 20 (bb)
     assert game.current_players_turn == 0
     game.current_player_make_move("call")
-    assert game.players[0].last_bet == 10
+    assert game.players[0].last_bet == 20
     assert game.players[0].move == MoveType.CALL
 
     game.current_player_make_move("check")
@@ -268,3 +268,29 @@ def test_gameplay_2():
     game.current_player_make_move("call")
 
     assert game.round == RoundType.TURN
+
+
+def test_gameplay_3():
+    game = BlindsPokerGame(100, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # sb first
+    game.add_player("Peter Parker", is_dealer=True)  # dealer bb
+    game.start_game()
+    game.start_hand()
+    assert game.round == RoundType.PRE_FLOP
+
+    # TS calls to 20 (bb)
+    assert game.current_players_turn == 0
+    game.current_player_make_move("call")
+    assert game.players[0].last_bet == 20
+    assert game.players[0].move == MoveType.CALL
+
+    game.current_player_make_move(
+        "bet", bet=40
+    )  # this is a raise to 40 not a bet of 40
+    assert game.players[1].last_bet == 40
+    assert game.players[1].move == MoveType.BET
+
+    game.current_player_make_move("call")
+
+    assert game.round == RoundType.FLOP
+    assert game.pot == 80

@@ -70,7 +70,7 @@ class Player:
     def make_a_bet(self, amount: int) -> None:
         self.chips_played += amount
         self.chips -= amount
-        self.last_bet = amount
+        self.last_bet += amount
 
     @property
     def is_all_in(self) -> bool:
