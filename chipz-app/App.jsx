@@ -29,7 +29,7 @@ import { api } from "./api";
 
 import { AppContext } from "./AppContext";
 
-import * as gStyle from "./components/globalStyle.js";
+import * as gStyle from "./components/globalStyle";
 
 import { websocket } from "./socket";
 

@@ -9,7 +9,7 @@ def test_player_create():
     assert player.chips == 1000
     assert player.display_name == "Tony Stark"
     assert player.chips_played == 0
-    assert player.last_move is None
+    assert player.move is None
     assert player.dealer is False
 
 
@@ -103,3 +103,12 @@ def test_player_list_find_dealer_last(player_list: PlayerList):
 
 def test_player_list_find_dealer_none(player_list: PlayerList):
     assert player_list.dealer is None
+
+
+def test_player_list_find_dealer_idx(player_list: PlayerList):
+    player_list[2].dealer = True
+    assert player_list.dealer_idx == 2
+
+
+def test_player_list_find_dealer_idx_none(player_list: PlayerList):
+    assert player_list.dealer_idx is None

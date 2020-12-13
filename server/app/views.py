@@ -60,12 +60,12 @@ def game(room=None):
             print(game_data)
             GAMES[code] = (
                 BlindsPokerGame(
-                    game_data["startingChips"],
-                    game_data["startingBlinds"],
-                    game_data["blindInterval"],
+                    int(game_data["startingChips"]),
+                    int(game_data["startingBlinds"]),
+                    int(game_data["blindInterval"]),
                 )
                 if game_data["useBlinds"]
-                else NoBlindsPokerGame(game_data["startingChips"])
+                else NoBlindsPokerGame(int(game_data["startingChips"]))
             )
             add_player_to_game(game_data["displayName"], code, dealer=True)
             return jsonify({"room": code})
@@ -157,3 +157,24 @@ def start_game(room):
     print("Starting game for " + room)
     GAMES[room].start_game()
     emit("STARTGAME", room=room)
+
+
+@socketio.on("STARTHAND")
+def start_hand(room):
+    print("Starting hand for " + room)
+    GAMES[room].start_hand()
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
+
+
+@socketio.on("GET_IN_GAME_INFO")
+def get_in_game_info(room):
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
+
+
+@socketio.on("MAKE_MOVE")
+def make_move(room, move: str, bet_amount: int):
+    if bet_amount != -1:
+        GAMES[room].current_player_make_move(move, bet=bet_amount)
+    else:
+        GAMES[room].current_player_make_move(move)
+    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)

@@ -9,7 +9,9 @@ class MoveType(Enum):
 
 
 class RoundType(Enum):
-    PRE_FLOP = auto()
-    FLOP = auto()
-    TURN = auto()
-    RIVER = auto()
+    PRE_HAND = 0
+    PRE_FLOP = 1
+    FLOP = 2
+    TURN = 3
+    RIVER = 4
+    SHOWDOWN = 5

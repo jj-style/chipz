@@ -6,6 +6,7 @@ import {
   TouchableHighlight,
   Slider,
   FlatList,
+  SafeAreaView,
 } from "react-native";
 
 import * as gStyle from "./globalStyle";
@@ -20,6 +21,8 @@ import { api } from "../api";
 
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { SplashScreen } from "./SplashScreen";
+
+import { websocket } from "../socket";
 
 const tmpState = {
   pot: 20,
@@ -84,61 +87,82 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     marginRight: 10,
   },
+  logItem: {
+    fontSize: 16,
+  },
 });
 
-const PlayScreen = ({ gameData, contextProvider, token }) => {
-  const minBet = !tmpState.lastBet ? tmpState.smallBlind : tmpState.lastBet;
-  const [newBet, setNewBet] = useState(minBet);
+const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
+  const thisPlayer = gameData._players._players.find(
+    (obj) => obj._name === token.displayName
+  );
+  const chipStack = thisPlayer._chips;
+  const minBet =
+    gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
 
-  function searchForPlayer(name, players) {
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].name === name) {
-        return players[i];
-      }
-    }
+  var betButtonText = "Bet";
+  if (gameData._last_bet > 0) {
+    betButtonText = "Raise to";
   }
-  const thisPlayer = searchForPlayer(tmpState.thisPlayer, tmpState.players);
-  const chipStack = thisPlayer.chips;
-  const chipsOut = thisPlayer.infront;
+  if (minBet === chipStack) {
+    betButtonText = "All in";
+  }
+
+  const [newBet, setNewBet] = useState(0);
+  useEffect(() => {
+    setNewBet(minBet);
+  }, [minBet]);
+
+  const players_turn_name =
+    gameData._players._players[gameData._players_turn]._name;
 
   return (
     <View style={{ flex: 1, margin: 10, marginTop: 30 }}>
       <View style={styles.infoBox}>
+        <Text style={styles.infoBoxText}>{gameData._round}</Text>
         <Text style={styles.infoBoxText}>Pot: £{gameData._pot}</Text>
+        <Text style={{ fontSize: 16 }}>
+          {token.displayName === players_turn_name
+            ? "Your"
+            : players_turn_name + "'s"}{" "}
+          turn
+        </Text>
       </View>
       <View style={styles.buttonGroup}>
         <StyledButton
           buttonText="Fold"
-          onPress={() => console.log("fold")}
+          onPress={() => makeMove("fold")}
           style={styles.bigButton}
           textStyle={styles.bigText}
         />
-        {tmpState.lastBet === null ? (
+        {thisPlayer._last_bet === gameData._last_bet ? (
           <StyledButton
             buttonText="Check"
-            onPress={() => console.log("check")}
+            onPress={() => makeMove("check")}
             style={styles.bigButton}
             textStyle={styles.bigText}
           />
         ) : (
           <StyledButton
-            buttonText="Call"
-            onPress={() => console.log("call")}
+            buttonText={`Call ${gameData._last_bet - thisPlayer._last_bet}`}
+            onPress={() => makeMove("call")}
             style={styles.bigButton}
             textStyle={styles.bigText}
           />
         )}
         <TouchableHighlight
-          onPress={() => console.log("bet")}
+          onPress={() => makeMove("bet", newBet)}
           style={[styles.betButton]}
           underlayColor="#e6e6e6"
         >
           <View style={{ width: "100%", alignItems: "center" }}>
-            <Text style={{ fontSize: 18 }}>Bet: £{newBet}</Text>
+            <Text style={{ fontSize: 18 }}>
+              {betButtonText}: £{newBet}
+            </Text>
             <Slider
-              minimumValue={minBet} // TODO: will need to recalculate this
-              maximumValue={chipStack} // TODO: max will be find the player then their stack
-              step={minBet} // TODO: and this
+              minimumValue={minBet}
+              maximumValue={chipStack}
+              step={minBet}
               onValueChange={(n) => setNewBet(n)}
               value={newBet}
               style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
@@ -156,7 +180,9 @@ const PlayScreen = ({ gameData, contextProvider, token }) => {
                 buttonText="1/2 Pot"
                 onPress={() => {
                   setNewBet(
-                    tmpState.pot / 2 <= chipStack ? tmpState.pot / 2 : chipStack
+                    Math.ceil(gameData._pot / 2) <= chipStack
+                      ? Math.ceil(gameData._pot / 2)
+                      : chipStack
                   );
                 }}
                 style={{ width: "17%" }}
@@ -166,7 +192,7 @@ const PlayScreen = ({ gameData, contextProvider, token }) => {
                 buttonText="Pot"
                 onPress={() => {
                   setNewBet(
-                    tmpState.pot <= chipStack ? tmpState.pot : chipStack
+                    gameData._pot <= chipStack ? gameData._pot : chipStack
                   );
                 }}
                 style={{ width: "17%" }}
@@ -204,6 +230,8 @@ const PlayerStats = ({ info, thisPlayer }) => {
 
 const InfoScreen = ({ contextProvider, token, gameData }) => {
   const { leaveGame } = useContext(contextProvider);
+  const copyPlayers = [...gameData._players._players];
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.infoPlayers}>
@@ -216,7 +244,7 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
           Table Standings
         </Text>
         <FlatList
-          data={gameData._players._players.sort((a, b) => {
+          data={copyPlayers.sort((a, b) => {
             return b._chips - a._chips;
           })}
           renderItem={({ item }) => (
@@ -270,35 +298,86 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
   );
 };
 
+const StartHand = ({ token, gameData, startHand }) => {
+  const dealerPlayer = gameData._players._players.find(
+    (o) => o._dealer === true
+  );
+  const isDealer = dealerPlayer._name === token.displayName;
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      {isDealer ? (
+        <StyledButton
+          buttonText="Start Hand"
+          onPress={startHand}
+          style={styles.bigButton}
+          textStyle={styles.bigText}
+        />
+      ) : (
+        <Text>Waiting for dealer to start the hand</Text>
+      )}
+    </View>
+  );
+};
+
+const LogItem = ({ data }) => {
+  const formattedDate = new Date(data.time).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <View style={styles.logItem}>
+      <Text>
+        [{formattedDate}] - {data.message}
+      </Text>
+    </View>
+  );
+};
+
+const LogScreen = ({ logMessages }) => {
+  return (
+    <SafeAreaView style={{ flex: 1, marginLeft: 20, marginTop: 40 }}>
+      <FlatList
+        data={logMessages}
+        renderItem={(item) => <LogItem data={item.item} />}
+        keyExtractor={(_, index) => `logMsg-${index}`}
+      />
+    </SafeAreaView>
+  );
+};
+
 const Tab = createBottomTabNavigator();
 
 export const GameScreen = ({ navigation, contextProvider, token }) => {
   const [gameData, setGameData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  websocket.off("GOT_GAME_INFO").on("GOT_GAME_INFO", (newdata) => {
+    // console.log(newdata);
+    setGameData(JSON.parse(newdata));
+    setLoading(false);
+  });
+
   useEffect(() => {
-    fetch(`${api}/game/${token.gameCode}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw res.json();
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("game data found");
-        setGameData(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        error.then((e) => {
-          console.log(e.message);
-        });
-      });
+    websocket.emit("GET_IN_GAME_INFO", token.gameCode);
   }, []);
 
+  const makeMove = (moveName, betAmount) => {
+    const is_my_turn =
+      gameData._players._players[gameData._players_turn]._name ===
+      token.displayName;
+    if (is_my_turn) {
+      console.log(`move ${moveName} ${betAmount ? betAmount : ""}`);
+    } else {
+      console.log("oi it's not your turn!!!");
+    }
+    websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
+  };
+
+  const startHand = () => {
+    websocket.emit("STARTHAND", token.gameCode);
+  };
+
+  // TODO: if roundtype is showdown then return select winner screen not tab navigation
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
@@ -310,6 +389,10 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
               iconName = focused ? "cards" : "cards-outline";
             } else if (route.name === "Info") {
               iconName = focused ? "account-group" : "account-group-outline";
+            } else if (route.name === "Start") {
+              iconName = focused ? "clock" : "clock-outline";
+            } else if (route.name === "Log") {
+              iconName = focused ? "file-document" : "file-document-outline";
             }
             return <Icon name={iconName} size={size} color={color} />;
           },
@@ -323,16 +406,30 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
           <Tab.Screen name="Loading" component={SplashScreen} />
         ) : (
           <>
-            <Tab.Screen name="Play">
-              {(props) => (
-                <PlayScreen
-                  {...props}
-                  contextProvider={contextProvider}
-                  token={token}
-                  gameData={gameData}
-                />
-              )}
-            </Tab.Screen>
+            {gameData._round === "PRE_HAND" ? (
+              <Tab.Screen name="Start">
+                {(props) => (
+                  <StartHand
+                    {...props}
+                    token={token}
+                    gameData={gameData}
+                    startHand={startHand}
+                  />
+                )}
+              </Tab.Screen>
+            ) : (
+              <Tab.Screen name="Play">
+                {(props) => (
+                  <PlayScreen
+                    {...props}
+                    contextProvider={contextProvider}
+                    token={token}
+                    gameData={gameData}
+                    makeMove={makeMove}
+                  />
+                )}
+              </Tab.Screen>
+            )}
             <Tab.Screen name="Info">
               {(props) => (
                 <InfoScreen
@@ -341,6 +438,11 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   token={token}
                   gameData={gameData}
                 />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="Log">
+              {(props) => (
+                <LogScreen {...props} logMessages={gameData._logger} />
               )}
             </Tab.Screen>
           </>
