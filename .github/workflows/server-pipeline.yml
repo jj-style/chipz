@@ -36,7 +36,7 @@ jobs:
         flake8 --count --statistics server/
     - name: Check formatting with black
       run: |
-        black --check server/
+        black --check --exclude="(env/|tests/)" server/
     - name: Test with pytest
       run: |
         pytest
