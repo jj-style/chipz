@@ -123,7 +123,11 @@ class PokerGame(ABC):
             if self.end_of_hand:
                 # player who hasn't folded wins the pot
                 self.win_pot(
-                    [p for p in self.players if p.move != MoveType.FOLD][0].display_name
+                    [
+                        [p for p in self.players if p.move != MoveType.FOLD][
+                            0
+                        ].display_name
+                    ]
                 )
                 # self.start_hand()
                 self._round = RoundType(0)
@@ -183,30 +187,33 @@ class PokerGame(ABC):
     def round(self) -> RoundType:
         return self._round
 
-    def win_pot(self, player_name: str) -> None:
-        winner = self.players[self.players.index(player_name)]
+    def win_pot(self, player_names: list) -> None:
+        a_winner = self.players[self.players.index(player_names[0])]
         for player in self.players:
             # for all other players - make their bets no bigger than the winner's
-            if player.display_name != player_name:
-                if player.chips_played > winner.chips_played:
-                    diff = player.chips_played - winner.chips_played
+            if player.display_name not in player_names:
+                if player.chips_played > a_winner.chips_played:
+                    diff = player.chips_played - a_winner.chips_played
                     player.chips_played -= diff
                     player.chips += diff
 
-        self._logger.msg(f"{player_name} wins pot of £{self.pot}", True)
-        winner.chips += self.pot
+        share_of_pot = int(self.pot / len(player_names))
+        for winner_name in player_names:
+            self._logger.msg(f"{winner_name} wins £{share_of_pot}", True)
+            winner = self.players[self.players.index(winner_name)]
+            winner.chips += share_of_pot
         for player in self.players:
             player.chips_played = 0
 
     @property
     def is_sidepot(self) -> bool:
         """Given in ON_BACKS state, is there a sidepot or will pot be split equally
-        There is a sidepot if for all the players who are still in, their chips they've played are not equal
+        There is a sidepot if for all the players who are still in, their chips they've
+        played are not equal
         Returns:
             bool: whether there is a sidepot or not
         """
         players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
-        print(repr(players_still_in))
         max_chips_played = max(
             players_still_in, key=lambda x: x.chips_played
         ).chips_played

@@ -227,6 +227,44 @@ def test_player_wins_money_when_others_all_fold():
     assert game.players[1].chips == 1000 - (matching_pot / 2)
 
 
+def test_players_split_money_when_win_pot():
+    game = BlindsPokerGame(100, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # bb
+    game.add_player("Peter Parker", is_dealer=True)  # dealer first to go
+    game.add_player("Bruce Banner", is_dealer=False)  # sb
+    game.start_game()
+    game.start_hand()
+
+    # pre-flop
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
+    game.current_player_make_move("check")
+
+    # flop
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    # turn
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    # river
+    game.current_player_make_move("bet", bet=50)
+    game.current_player_make_move("call")
+    game.current_player_make_move("fold")
+
+    # on_backs
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is False
+
+    game.win_pot(["Tony Stark", "Bruce Banner"])
+    assert game.players[0].chips == 110
+    assert game.players[2].chips == 110
+    assert game.players[1].chips == 80
+
+
 def test_gameplay_2():
     game = BlindsPokerGame(100, 10, 10)
     game.add_player("Tony Stark", is_dealer=False)  # sb first

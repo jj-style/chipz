@@ -178,3 +178,8 @@ def make_move(room, move: str, bet_amount: int):
     else:
         GAMES[room].current_player_make_move(move)
     emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
+
+
+@socketio.on("SELECT_WINNERS")
+def select_winners(room, players: list):
+    pass
