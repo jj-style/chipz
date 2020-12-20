@@ -276,7 +276,14 @@ class BlindsPokerGame(PokerGame):
 
     def start_game(self):
         super().start_game()
-        self.set_blinds_up_at()
+
+    def start_hand(self):
+        # update blinds and set new blinds up at time if time is greater than blinds up at time
+        if self._blinds_up_at is None or (
+            self._blinds_up_at is not None and datetime.now() > self._blinds_up_at
+        ):
+            self.set_blinds_up_at()
+        super().start_hand()
 
     def start_round(self, round: int):
         super().start_round(round)
