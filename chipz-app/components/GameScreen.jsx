@@ -8,6 +8,9 @@ import {
   FlatList,
   SafeAreaView,
 } from "react-native";
+import CheckBox from "@react-native-community/checkbox";
+
+import update from "immutability-helper";
 
 import * as gStyle from "./globalStyle";
 import { StyledButton } from "./StyledButton";
@@ -345,6 +348,60 @@ const LogScreen = ({ logMessages }) => {
   );
 };
 
+const SplitPotWinnersScreen = ({ gameData }) => {
+  var playersToChoose = gameData._players._players.filter(
+    (p) => p._move !== "FOLD"
+  );
+  const [state, setState] = useState(
+    playersToChoose.map((p) => ({
+      ...p,
+      selectedToWin: false,
+    }))
+  );
+  const setPlayerSelected = (i, newVal) => {
+    setState(
+      update(state, {
+        [i]: {
+          selectedToWin: {
+            $set: newVal,
+          },
+        },
+      })
+    );
+  };
+  // TODO: only render this if dealer - probably from parent controller, just show text like with waiting
+  // for dealer to start the hand
+  return (
+    <SafeAreaView style={{ flex: 1, marginLeft: 20, marginTop: 40 }}>
+      <FlatList
+        data={state}
+        renderItem={(item) => (
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text>{item.item._name}</Text>
+            <CheckBox
+              value={item.item.selectedToWin}
+              onValueChange={(newVal) => setPlayerSelected(item.index, newVal)}
+            />
+          </View>
+        )}
+        keyExtractor={(_, index) => `selectablePlayer-${index}`}
+      />
+    </SafeAreaView>
+  );
+};
+
+const SelectWinnerScreen = ({ gameData }) => {
+  return gameData._is_sidepot === false ? (
+    <SplitPotWinnersScreen gameData={gameData} />
+  ) : null;
+};
+
 const Tab = createBottomTabNavigator();
 
 export const GameScreen = ({ navigation, contextProvider, token }) => {
@@ -393,6 +450,8 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
               iconName = focused ? "clock" : "clock-outline";
             } else if (route.name === "Log") {
               iconName = focused ? "file-document" : "file-document-outline";
+            } else if (route.name === "Choose Winners") {
+              iconName = "check-all";
             }
             return <Icon name={iconName} size={size} color={color} />;
           },
@@ -404,6 +463,10 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
       >
         {loading ? (
           <Tab.Screen name="Loading" component={SplashScreen} />
+        ) : gameData._round === "ON_BACKS" ? (
+          <Tab.Screen name="Choose Winners">
+            {(props) => <SelectWinnerScreen {...props} gameData={gameData} />}
+          </Tab.Screen>
         ) : (
           <>
             {gameData._round === "PRE_HAND" ? (
