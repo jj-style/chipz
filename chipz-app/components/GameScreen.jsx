@@ -232,7 +232,7 @@ const PlayerStats = ({ info, thisPlayer }) => {
 };
 
 const InfoScreen = ({ contextProvider, token, gameData }) => {
-  const { leaveGame } = useContext(contextProvider);
+  const { leaveGameInGame } = useContext(contextProvider);
   const copyPlayers = [...gameData._players._players];
 
   return (
@@ -287,7 +287,7 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
             leaveGameAlert(
               () => null,
               () =>
-                leaveGame({
+                leaveGameInGame({
                   gameCode: token.gameCode,
                   displayName: token.displayName,
                 })
