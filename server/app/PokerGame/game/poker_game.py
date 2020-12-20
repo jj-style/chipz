@@ -129,9 +129,6 @@ class PokerGame(ABC):
                         ].display_name
                     ]
                 )
-                # self.start_hand()
-                self._round = RoundType(0)
-                self.players.move_dealer(1)
                 return
 
         elif player.move == MoveType.CHECK:
@@ -202,8 +199,12 @@ class PokerGame(ABC):
             self._logger.msg(f"{winner_name} wins £{share_of_pot}", True)
             winner = self.players[self.players.index(winner_name)]
             winner.chips += share_of_pot
+
+        # move to next round
         for player in self.players:
             player.chips_played = 0
+        self._round = RoundType(0)
+        self.players.move_dealer(1)
 
     @property
     def is_sidepot(self) -> bool:

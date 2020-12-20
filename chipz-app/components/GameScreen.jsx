@@ -101,7 +101,7 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
   );
   const chipStack = thisPlayer._chips;
   const minBet =
-    gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
+    (gameData._min_raise > chipStack ? chipStack : gameData._min_raise) || 10;
 
   var betButtonText = "Bet";
   if (gameData._last_bet > 0) {
@@ -348,7 +348,7 @@ const LogScreen = ({ logMessages }) => {
   );
 };
 
-const SplitPotWinnersScreen = ({ gameData }) => {
+const SplitPotWinnersScreen = ({ gameData, confirmCallback }) => {
   var playersToChoose = gameData._players._players.filter(
     (p) => p._move !== "FOLD"
   );
@@ -369,10 +369,16 @@ const SplitPotWinnersScreen = ({ gameData }) => {
       })
     );
   };
-  // TODO: only render this if dealer - probably from parent controller, just show text like with waiting
-  // for dealer to start the hand
+
   return (
     <SafeAreaView style={{ flex: 1, marginLeft: 20, marginTop: 40 }}>
+      <Text style={{ fontSize: 18, alignSelf: "center" }}>
+        Select winning player(s) to split the pot
+      </Text>
+      <Text style={{ fontSize: 18, alignSelf: "center" }}>
+        Pot: £{gameData._pot}
+      </Text>
+      <gStyle.HorizontalRule />
       <FlatList
         data={state}
         renderItem={(item) => (
@@ -383,7 +389,7 @@ const SplitPotWinnersScreen = ({ gameData }) => {
               justifyContent: "space-between",
             }}
           >
-            <Text>{item.item._name}</Text>
+            <Text style={styles.bigText}>{item.item._name}</Text>
             <CheckBox
               value={item.item.selectedToWin}
               onValueChange={(newVal) => setPlayerSelected(item.index, newVal)}
@@ -392,14 +398,42 @@ const SplitPotWinnersScreen = ({ gameData }) => {
         )}
         keyExtractor={(_, index) => `selectablePlayer-${index}`}
       />
+      <StyledButton
+        buttonText="Confirm Winners"
+        underlayColor={gStyle.buttonUnderlayColor}
+        onPress={() =>
+          confirmCallback(
+            state.filter((p) => p.selectedToWin === true).map((p) => p._name)
+          )
+        }
+        disabled={state.filter((p) => p.selectedToWin === true).length === 0}
+      />
     </SafeAreaView>
   );
 };
 
-const SelectWinnerScreen = ({ gameData }) => {
-  return gameData._is_sidepot === false ? (
-    <SplitPotWinnersScreen gameData={gameData} />
-  ) : null;
+const SelectWinnerScreen = ({ gameData, token }) => {
+  const dealerPlayer = gameData._players._players.find(
+    (o) => o._dealer === true
+  );
+  const isDealer = dealerPlayer._name === token.displayName;
+
+  const splitPotCallback = (names) => {
+    websocket.emit("SELECT_WINNERS", token.gameCode, names);
+  };
+
+  return isDealer ? (
+    gameData._is_sidepot === false ? (
+      <SplitPotWinnersScreen
+        gameData={gameData}
+        confirmCallback={splitPotCallback}
+      />
+    ) : null
+  ) : (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text>Waiting for dealer to choose the winner of the hand</Text>
+    </View>
+  );
 };
 
 const Tab = createBottomTabNavigator();
@@ -465,7 +499,13 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
           <Tab.Screen name="Loading" component={SplashScreen} />
         ) : gameData._round === "ON_BACKS" ? (
           <Tab.Screen name="Choose Winners">
-            {(props) => <SelectWinnerScreen {...props} gameData={gameData} />}
+            {(props) => (
+              <SelectWinnerScreen
+                {...props}
+                gameData={gameData}
+                token={token}
+              />
+            )}
           </Tab.Screen>
         ) : (
           <>
