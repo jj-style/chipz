@@ -112,10 +112,11 @@ class PokerGame(ABC):
         # TODO: need additional logic for folding and stuff
         # TODO: win round if 1 player left etc.
         elif player.move == MoveType.CALL:
-            self._logger.msg(
-                f"{player.display_name} calls £{self._last_bet - player.last_bet}", True
-            )
-            player.make_a_bet(self._last_bet - player.last_bet)
+            amount_to_call = self._last_bet - player.last_bet
+            if amount_to_call > player.chips:
+                amount_to_call = player.chips
+            self._logger.msg(f"{player.display_name} calls £{amount_to_call}", True)
+            player.make_a_bet(amount_to_call)
 
         elif player.move == MoveType.FOLD:
             self._logger.msg(f"{player.display_name} folds", True)
@@ -197,6 +198,20 @@ class PokerGame(ABC):
         for player in self.players:
             player.chips_played = 0
 
+    @property
+    def is_sidepot(self) -> bool:
+        """Given in ON_BACKS state, is there a sidepot or will pot be split equally
+        There is a sidepot if for all the players who are still in, their chips they've played are not equal
+        Returns:
+            bool: whether there is a sidepot or not
+        """
+        players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
+        print(repr(players_still_in))
+        max_chips_played = max(
+            players_still_in, key=lambda x: x.chips_played
+        ).chips_played
+        return not all(p.chips_played == max_chips_played for p in players_still_in)
+
     def to_json(self):
         def default(x):
             if isinstance(x, datetime):
@@ -208,7 +223,10 @@ class PokerGame(ABC):
             else:
                 return x.__dict__
 
-        full_dict = {**self.__dict__, **{"_pot": self.pot}}
+        full_dict = {
+            **self.__dict__,
+            **{"_pot": self.pot, "_is_sidepot": self.is_sidepot},
+        }
         return json.dumps(
             full_dict,
             default=default,
