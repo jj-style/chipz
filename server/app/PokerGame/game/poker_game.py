@@ -1,6 +1,8 @@
 from abc import ABC
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 import json
+import operator
 from enum import Enum
 from .game_enums import MoveType, RoundType
 from app.PokerGame.player import Player, PlayerList
@@ -141,14 +143,17 @@ class PokerGame(ABC):
             self._next_players_turn()  # move turn around
 
     def _next_players_turn(self):
-        """update pointer to current player by skipping over players who have folded"""
+        """update pointer to current player by skipping over players who
+        have folded and who have money to bet
+        """
         # TODO: do a thing like if didn't change then one player left so you won
         def move_one_player_round():
             self._players_turn = (self._players_turn + 1) % len(self._players)
 
         while True:
             move_one_player_round()
-            if not self.players[self.current_players_turn].move == MoveType.FOLD:
+            cp = self.players[self.current_players_turn]
+            if cp.move != MoveType.FOLD and cp.chips > 0:
                 break
 
     @property
@@ -200,15 +205,53 @@ class PokerGame(ABC):
             winner = self.players[self.players.index(winner_name)]
             winner.chips += share_of_pot
 
-        # move to next round
+        self.next_hand()
+
+    def next_hand(self):
+        """move to next hand"""
         for player in self.players:
             player.chips_played = 0
         self._round = RoundType(0)
         self.players.move_dealer(1)
 
+    def win_sidepot(self, player_order: list) -> None:
+        """Split pot appropriately between players
+        Arguments:
+            player_order: list - player names in order they should take part of the pot
+        """
+        # NOTE: edge case as players could have same hand within a sidepot split
+        # but not implemented so player's must be given distinct order
+        players_cls = [
+            self.players[self.players.index(p)] for p in player_order
+        ]  # list of player classes in order they are given
+
+        for plyr_idx in range(len(players_cls)):
+            plyr = players_cls[plyr_idx]
+            my_sidepot = plyr.chips_played  # put their chips into their sidepot
+            for othr_plyr_idx in range(plyr_idx + 1, len(players_cls)):
+                # for each other player win money from them
+                othr_plyr = players_cls[othr_plyr_idx]
+                # player can win max of what they have bet against other players
+                win_from_player = (
+                    othr_plyr.chips_played
+                    if othr_plyr.chips_played <= plyr.chips_played
+                    else plyr.chips_played
+                )
+                my_sidepot += win_from_player
+                othr_plyr.chips_played -= win_from_player
+            if my_sidepot > 0:
+                self._logger.msg(f"{plyr.display_name} wins £{my_sidepot}", True)
+            plyr.chips_played = 0
+            plyr.chips += my_sidepot
+        self.next_hand()
+
     @property
     def num_sidepots(self) -> int:
-        """Returns the max number of sidepots to be won (how many different chips in front)"""
+        """Returns the max number of sidepots to be won
+        (how many different chips in front)
+
+        Not really the number of sidepots but not sure what to call it.
+        """
         players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
         return len(set([p.chips_played for p in players_still_in]))
 
@@ -284,7 +327,9 @@ class BlindsPokerGame(PokerGame):
         super().start_game()
 
     def start_hand(self):
-        # update blinds and set new blinds up at time if time is greater than blinds up at time
+        """update blinds and set new blinds up at time if time is greater
+        than blinds up at time
+        """
         if self._blinds_up_at is None or (
             self._blinds_up_at is not None and datetime.now() > self._blinds_up_at
         ):

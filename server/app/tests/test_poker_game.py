@@ -1,4 +1,5 @@
 import pytest
+from copy import deepcopy
 
 from app.PokerGame.game import (
     NoBlindsPokerGame,
@@ -403,3 +404,50 @@ def test_is_sidepot():
 
     assert game.round == RoundType.ON_BACKS
     assert game.is_sidepot is True
+
+
+def test_sidepot_1():
+    game = NoBlindsPokerGame(100)
+    game.add_player("Tony Stark", is_dealer=True)  # dealer first
+    game.add_player("Peter Parker", is_dealer=False)  # first to go
+    game.add_player("Bruce Banner", is_dealer=False)
+
+    game.players[0].chips = 75
+    game.players[1].chips = 200
+    game.players[2].chips = 25
+
+    game.start_game()
+    game.start_hand()
+    game._round = RoundType.RIVER
+
+    game.current_player_make_move("bet", bet=200)
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
+
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is True
+    assert game.num_sidepots == 3
+
+    game_copy_1 = deepcopy(game)
+    game_copy_1.win_sidepot(["Tony Stark", "Peter Parker", "Bruce Banner"])
+    assert game_copy_1.players[0].chips == 175
+    assert game_copy_1.players[1].chips == 125
+    assert game_copy_1.players[2].chips == 0
+
+    game_copy_2 = deepcopy(game)
+    game_copy_2.win_sidepot(["Tony Stark", "Bruce Banner", "Peter Parker"])
+    assert game_copy_2.players[0].chips == 175
+    assert game_copy_2.players[1].chips == 125
+    assert game_copy_2.players[2].chips == 0
+
+    game_copy_3 = deepcopy(game)
+    game_copy_3.win_sidepot(["Bruce Banner", "Peter Parker", "Tony Stark"])
+    assert game_copy_3.players[0].chips == 0
+    assert game_copy_3.players[1].chips == 225
+    assert game_copy_3.players[2].chips == 75
+
+    game_copy_4 = deepcopy(game)
+    game_copy_4.win_sidepot(["Bruce Banner", "Tony Stark", "Peter Parker"])
+    assert game_copy_4.players[0].chips == 100
+    assert game_copy_4.players[1].chips == 125
+    assert game_copy_4.players[2].chips == 75
