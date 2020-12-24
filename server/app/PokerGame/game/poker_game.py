@@ -207,6 +207,12 @@ class PokerGame(ABC):
         self.players.move_dealer(1)
 
     @property
+    def num_sidepots(self) -> int:
+        """Returns the max number of sidepots to be won (how many different chips in front)"""
+        players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
+        return len(set([p.chips_played for p in players_still_in]))
+
+    @property
     def is_sidepot(self) -> bool:
         """Given in ON_BACKS state, is there a sidepot or will pot be split equally
         There is a sidepot if for all the players who are still in, their chips they've
@@ -214,11 +220,7 @@ class PokerGame(ABC):
         Returns:
             bool: whether there is a sidepot or not
         """
-        players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
-        max_chips_played = max(
-            players_still_in, key=lambda x: x.chips_played
-        ).chips_played
-        return not all(p.chips_played == max_chips_played for p in players_still_in)
+        return self.num_sidepots > 1
 
     def to_json(self):
         def default(x):
@@ -233,7 +235,11 @@ class PokerGame(ABC):
 
         full_dict = {
             **self.__dict__,
-            **{"_pot": self.pot, "_is_sidepot": self.is_sidepot},
+            **{
+                "_pot": self.pot,
+                "_is_sidepot": self.is_sidepot,
+                "_num_sidepots": self.num_sidepots,
+            },
         }
         return json.dumps(
             full_dict,
