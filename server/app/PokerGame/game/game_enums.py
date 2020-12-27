@@ -6,6 +6,7 @@ class MoveType(Enum):
     CHECK = auto()
     CALL = auto()
     BET = auto()
+    OUT = auto()
 
 
 class RoundType(Enum):

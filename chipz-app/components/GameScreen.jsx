@@ -219,12 +219,20 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
 
 const PlayerStats = ({ info, thisPlayer }) => {
   const fontWeight = thisPlayer === info._name ? "bold" : "normal";
+  const color =
+    info._last_move === "OUT"
+      ? "RED"
+      : info._last_move === "FOLD"
+      ? "gray"
+      : "black";
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
-      <Text style={[styles.infoName, { fontWeight: fontWeight }]}>
+      <Text style={[styles.infoName, { fontWeight: fontWeight, color: color }]}>
         {info._name}
       </Text>
-      <Text style={[styles.infoChips, { fontWeight: fontWeight }]}>
+      <Text
+        style={[styles.infoChips, { fontWeight: fontWeight, color: color }]}
+      >
         £{info._chips}
       </Text>
     </View>
@@ -477,7 +485,16 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     websocket.emit("STARTHAND", token.gameCode);
   };
 
-  // TODO: if roundtype is showdown then return select winner screen not tab navigation
+  var thisPlayerCanPlay = false;
+  if (!loading) {
+    const thisPlayer = gameData._players._players.find(
+      (obj) => obj._name === token.displayName
+    );
+    thisPlayerCanPlay = !(
+      thisPlayer._last_move === "FOLD" || thisPlayer._last_move === "OUT"
+    );
+  }
+
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
@@ -529,7 +546,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   />
                 )}
               </Tab.Screen>
-            ) : (
+            ) : thisPlayerCanPlay ? (
               <Tab.Screen name="Play">
                 {(props) => (
                   <PlayScreen
@@ -541,7 +558,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   />
                 )}
               </Tab.Screen>
-            )}
+            ) : null}
             <Tab.Screen name="Info">
               {(props) => (
                 <InfoScreen

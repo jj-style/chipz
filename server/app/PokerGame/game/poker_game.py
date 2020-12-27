@@ -34,7 +34,7 @@ class PokerGame(ABC):
         self._round = RoundType(round)
         self._last_bet = 0
         for player in self._players:
-            if player.move != MoveType.FOLD or round == 1:
+            if player.move not in [MoveType.FOLD, MoveType.OUT] or round == 1:
                 player.move = None
                 player.last_bet = 0
 
@@ -48,7 +48,8 @@ class PokerGame(ABC):
             )  # set left of dealer to go first
             valid_next_player = (
                 True
-                if self.players[self.current_players_turn].move != MoveType.FOLD
+                if self.players[self.current_players_turn].move
+                not in [MoveType.FOLD, MoveType.OUT]
                 else False
             )
 
@@ -126,9 +127,11 @@ class PokerGame(ABC):
                 # player who hasn't folded wins the pot
                 self.win_pot(
                     [
-                        [p for p in self.players if p.move != MoveType.FOLD][
-                            0
-                        ].display_name
+                        [
+                            p
+                            for p in self.players
+                            if p.move not in [MoveType.FOLD, MoveType.OUT]
+                        ][0].display_name
                     ]
                 )
                 return
@@ -153,7 +156,7 @@ class PokerGame(ABC):
         while True:
             move_one_player_round()
             cp = self.players[self.current_players_turn]
-            if cp.move != MoveType.FOLD and cp.chips > 0:
+            if cp.move not in [MoveType.FOLD, MoveType.OUT] and cp.chips > 0:
                 break
 
     @property
@@ -171,7 +174,7 @@ class PokerGame(ABC):
                 player.move is None
             ):  # if a player hasn't played a move can't be end of round
                 return False
-            elif player.move != MoveType.FOLD:
+            elif player.move not in [MoveType.FOLD, MoveType.OUT]:
                 if player.chips_played != max_chips and not player.is_all_in:
                     return False
         return True
@@ -183,7 +186,12 @@ class PokerGame(ABC):
         Returns:
             bool: whether the hand has ended
         """
-        return len([p for p in self.players if p.move != MoveType.FOLD]) == 1
+        return (
+            len(
+                [p for p in self.players if p.move not in [MoveType.FOLD, MoveType.OUT]]
+            )
+            == 1
+        )
 
     @property
     def round(self) -> RoundType:
@@ -247,7 +255,7 @@ class PokerGame(ABC):
 
     @property
     def players_in(self):
-        return [p for p in self.players if p.move != MoveType.FOLD]
+        return [p for p in self.players if p.move not in [MoveType.FOLD, MoveType.OUT]]
 
     @property
     def num_sidepots(self) -> int:
