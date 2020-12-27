@@ -246,14 +246,18 @@ class PokerGame(ABC):
         self.next_hand()
 
     @property
+    def players_in(self):
+        return [p for p in self.players if p.move != MoveType.FOLD]
+
+    @property
     def num_sidepots(self) -> int:
         """Returns the max number of sidepots to be won
         (how many different chips in front)
 
         Not really the number of sidepots but not sure what to call it.
         """
-        players_still_in = [p for p in self.players if p.move != MoveType.FOLD]
-        return len(set([p.chips_played for p in players_still_in]))
+
+        return len(set([p.chips_played for p in self.players_in]))
 
     @property
     def is_sidepot(self) -> bool:
@@ -263,7 +267,7 @@ class PokerGame(ABC):
         Returns:
             bool: whether there is a sidepot or not
         """
-        return self.num_sidepots > 1
+        return self.num_sidepots > 1 and len(self.players_in) > 2
 
     def to_json(self):
         def default(x):
@@ -282,6 +286,7 @@ class PokerGame(ABC):
                 "_pot": self.pot,
                 "_is_sidepot": self.is_sidepot,
                 "_num_sidepots": self.num_sidepots,
+                "_players_on_backs": self.players_in,
             },
         }
         return json.dumps(

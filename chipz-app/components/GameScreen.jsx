@@ -422,13 +422,22 @@ const SelectWinnerScreen = ({ gameData, token }) => {
     websocket.emit("SELECT_WINNERS", token.gameCode, names);
   };
 
+  const sidepotCallback = (names) => {
+    websocket.emit("SELECT_SIDEPOT_WINNERS", token.gameCode, names);
+  };
+
   return isDealer ? (
     gameData._is_sidepot === false ? (
       <SplitPotWinnersScreen
         gameData={gameData}
         confirmCallback={splitPotCallback}
       />
-    ) : null
+    ) : (
+      <SidepotOrderScreen
+        data={gameData._players_on_backs}
+        confirmCallback={sidepotCallback}
+      />
+    )
   ) : (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <Text>Waiting for dealer to choose the winner of the hand</Text>

@@ -363,44 +363,22 @@ def test_is_no_sidepot():
 
 
 def test_is_sidepot():
-    game = BlindsPokerGame(100, 10, 10)
-    game.add_player("Tony Stark", is_dealer=False)  # sb first
-    game.add_player("Peter Parker", is_dealer=True)  # dealer bb
+    game = NoBlindsPokerGame(100)
+    game.add_player("Tony Stark", is_dealer=False)
+    game.add_player("Peter Parker", is_dealer=True)  # dealer
+    game.add_player("Bruce Banner", is_dealer=False)  # first
     game.start_game()
     game.start_hand()
 
-    assert game.round == RoundType.PRE_FLOP
-    game.current_player_make_move("call")
-    game.current_player_make_move("check")
-
-    assert game.round == RoundType.FLOP
-    game.current_player_make_move("bet", bet=30)
-    game.current_player_make_move("call")
-
-    assert game.round == RoundType.TURN
-    game.current_player_make_move("bet", bet=20)
-    game.current_player_make_move("fold")
-
-    assert game.players[0].chips == 150
-    assert game.players[1].chips == 50
-    game.start_hand()
-
-    assert game.round == RoundType.PRE_FLOP
-    game.current_player_make_move("call")
-    game.current_player_make_move("check")
-
-    assert game.round == RoundType.FLOP
-    game.current_player_make_move("check")
-    game.current_player_make_move("bet", bet=75)
-    game.current_player_make_move("call")
-
-    assert game.round == RoundType.TURN
-    game.current_player_make_move("check")
-    game.current_player_make_move("check")
+    game._round = RoundType.RIVER
+    game.players[0]._chips = 200
+    game.players[1]._chips = 25
+    game.players[2]._chips = 75
 
     assert game.round == RoundType.RIVER
-    game.current_player_make_move("check")
-    game.current_player_make_move("check")
+    game.current_player_make_move("bet", bet=75)
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
 
     assert game.round == RoundType.ON_BACKS
     assert game.is_sidepot is True
