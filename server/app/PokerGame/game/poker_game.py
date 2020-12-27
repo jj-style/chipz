@@ -27,6 +27,9 @@ class PokerGame(ABC):
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
+        for player in self._players:
+            if player.chips == 0:
+                player.move = MoveType.OUT
         self.start_round(1)
 
     def start_round(self, round: int):
