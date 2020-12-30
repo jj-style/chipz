@@ -68,19 +68,7 @@ class PokerGame(ABC):
                 player.last_bet = 0
 
         # select first left of dealer who hasn't folded to start round
-        valid_next_player = False
-        inc = 0
-        while not valid_next_player:
-            inc += 1
-            self._players_turn = (self._players.dealer_idx + inc) % len(
-                self._players
-            )  # set left of dealer to go first
-            valid_next_player = (
-                True
-                if self.players[self.current_players_turn].move
-                not in [MoveType.FOLD, MoveType.OUT]
-                else False
-            )
+        self._players_turn = self._next_players_turn(self._players.dealer_idx)
 
     @property
     def min_raise(self) -> int:
@@ -172,21 +160,25 @@ class PokerGame(ABC):
             self._round = RoundType(self._round.value + 1)
             self.start_round(self._round)
         else:
-            self._next_players_turn()  # move turn around
+            next_player_idx = self._next_players_turn(
+                self._players_turn
+            )  # move turn around
+            self._players_turn = next_player_idx
 
-    def _next_players_turn(self):
-        """update pointer to current player by skipping over players who
-        have folded and who have money to bet
+    def _next_players_turn(self, from_) -> int:
+        """return index to players of next player whose turn it is
+        by skipping over players who have folded or are out
         """
         # TODO: do a thing like if didn't change then one player left so you won
-        def move_one_player_round():
-            self._players_turn = (self._players_turn + 1) % len(self._players)
+        def move_one_player_round(current):
+            return (current + 1) % len(self._players)
 
+        npi = from_
         while True:
-            move_one_player_round()
-            cp = self.players[self.current_players_turn]
-            if cp.move not in [MoveType.FOLD, MoveType.OUT] and cp.chips > 0:
-                break
+            npi = move_one_player_round(npi)
+            np = self.players[npi]
+            if np.move not in [MoveType.FOLD, MoveType.OUT]:
+                return npi
 
     @property
     def end_of_round(self) -> bool:
@@ -382,14 +374,12 @@ class BlindsPokerGame(PokerGame):
         super().start_round(round)
         # if pre-flop is starting small blind and big blind put down their bet
         if self._round == RoundType.PRE_FLOP:
-            self.player_make_move(
-                self.players[self.current_players_turn].display_name,
+            self.current_player_make_move(
                 "bet",
                 bet=self.small_blind,
                 blinds=True,
             )
-            self.player_make_move(
-                self.players[self.current_players_turn].display_name,
+            self.current_player_make_move(
                 "bet",
                 bet=self.big_blind,
                 blinds=True,
