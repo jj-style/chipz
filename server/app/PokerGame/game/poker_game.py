@@ -183,7 +183,7 @@ class PokerGame(ABC):
         while True:
             npi = move_one_player_round(npi)
             np = self.players[npi]
-            if (np.move not in [MoveType.FOLD, MoveType.OUT]) or np.chips > 0:
+            if np.move not in [MoveType.FOLD, MoveType.OUT]:
                 return npi
 
     @property
