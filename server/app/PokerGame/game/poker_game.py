@@ -19,18 +19,44 @@ class PokerGame(ABC):
         self._min_raise: int = -1
         self._last_bet: int = -1
         self._logger: GameLogger = GameLogger()
+        self._total_players: int = (
+            -1
+        )  # total number of players still in poker game at any given point
 
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
         self._started_at = datetime.now()
         self._round = RoundType(0)  # set round to pre_hand
+        self._total_players = len(self.players)
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
-        for player in self._players:
-            if player.chips == 0:
-                player.move = MoveType.OUT
+        self.eliminate_players_who_went_out()
         self.start_round(1)
+
+    def eliminate_players_who_went_out(self):
+        """remove players that went out during the round and
+        log their names and the positions they went out in
+        """
+        players_to_remove = []
+        for player in self._players:
+            if player.chips == 0 and player.move != MoveType.OUT:
+                players_to_remove.append(player)
+
+        if len(players_to_remove) > 0:
+            players = ",".join([p.display_name for p in players_to_remove])
+            positions = ",".join(
+                map(
+                    str,
+                    range(
+                        self._total_players,
+                        self._total_players - len(players_to_remove),
+                        -1,
+                    ),
+                )
+            )
+            self._logger.msg(f"{players} checked out {positions}", True)
+            self._total_players -= len(players_to_remove)
 
     def start_round(self, round: int):
         """Anything that should happen before the next stage within a hand"""
