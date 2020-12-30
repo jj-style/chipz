@@ -154,65 +154,67 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
             textStyle={styles.bigText}
           />
         )}
-        <TouchableHighlight
-          onPress={() => makeMove("bet", newBet)}
-          style={[styles.betButton]}
-          underlayColor="#e6e6e6"
-        >
-          <View style={{ width: "100%", alignItems: "center" }}>
-            <Text style={{ fontSize: 18 }}>
-              {betButtonText}: £{newBet}
-            </Text>
-            <Slider
-              minimumValue={minBet}
-              maximumValue={chipStack}
-              step={minBet}
-              onValueChange={(n) => setNewBet(n)}
-              value={newBet}
-              style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
-            />
-            <View style={styles.quickBetRow}>
-              <StyledButton
-                buttonText="Min"
-                onPress={() => {
-                  setNewBet(minBet);
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
+        {thisPlayer._chips > 0 ? (
+          <TouchableHighlight
+            onPress={() => makeMove("bet", newBet)}
+            style={[styles.betButton]}
+            underlayColor="#e6e6e6"
+          >
+            <View style={{ width: "100%", alignItems: "center" }}>
+              <Text style={{ fontSize: 18 }}>
+                {betButtonText}: £{newBet}
+              </Text>
+              <Slider
+                minimumValue={minBet}
+                maximumValue={chipStack}
+                step={minBet}
+                onValueChange={(n) => setNewBet(n)}
+                value={newBet}
+                style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
               />
-              <StyledButton
-                buttonText="1/2 Pot"
-                onPress={() => {
-                  setNewBet(
-                    Math.ceil(gameData._pot / 2) <= chipStack
-                      ? Math.ceil(gameData._pot / 2)
-                      : chipStack
-                  );
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
-              <StyledButton
-                buttonText="Pot"
-                onPress={() => {
-                  setNewBet(
-                    gameData._pot <= chipStack ? gameData._pot : chipStack
-                  );
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
-              <StyledButton
-                buttonText="Max"
-                onPress={() => {
-                  setNewBet(chipStack);
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
+              <View style={styles.quickBetRow}>
+                <StyledButton
+                  buttonText="Min"
+                  onPress={() => {
+                    setNewBet(minBet);
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="1/2 Pot"
+                  onPress={() => {
+                    setNewBet(
+                      Math.ceil(gameData._pot / 2) <= chipStack
+                        ? Math.ceil(gameData._pot / 2)
+                        : chipStack
+                    );
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="Pot"
+                  onPress={() => {
+                    setNewBet(
+                      gameData._pot <= chipStack ? gameData._pot : chipStack
+                    );
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="Max"
+                  onPress={() => {
+                    setNewBet(chipStack);
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+              </View>
             </View>
-          </View>
-        </TouchableHighlight>
+          </TouchableHighlight>
+        ) : null}
       </View>
     </View>
   );
