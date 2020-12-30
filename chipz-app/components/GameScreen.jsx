@@ -221,7 +221,7 @@ const PlayerStats = ({ info, thisPlayer }) => {
   const fontWeight = thisPlayer === info._name ? "bold" : "normal";
   const color =
     info._last_move === "OUT"
-      ? "RED"
+      ? "red"
       : info._last_move === "FOLD"
       ? "gray"
       : "black";
@@ -357,9 +357,7 @@ const LogScreen = ({ logMessages }) => {
 };
 
 const SplitPotWinnersScreen = ({ gameData, confirmCallback }) => {
-  var playersToChoose = gameData._players._players.filter(
-    (p) => p._move !== "FOLD"
-  );
+  var playersToChoose = gameData._players_on_backs;
   const [state, setState] = useState(
     playersToChoose.map((p) => ({
       ...p,
@@ -475,10 +473,10 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
       token.displayName;
     if (is_my_turn) {
       console.log(`move ${moveName} ${betAmount ? betAmount : ""}`);
+      websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
     } else {
       console.log("oi it's not your turn!!!");
     }
-    websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
   };
 
   const startHand = () => {

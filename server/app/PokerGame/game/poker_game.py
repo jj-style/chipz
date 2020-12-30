@@ -31,7 +31,6 @@ class PokerGame(ABC):
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
-        self.eliminate_players_who_went_out()
         self.start_round(1)
 
     def eliminate_players_who_went_out(self):
@@ -42,6 +41,7 @@ class PokerGame(ABC):
         for player in self._players:
             if player.chips == 0 and player.move != MoveType.OUT:
                 players_to_remove.append(player)
+                player.move = MoveType.OUT
 
         if len(players_to_remove) > 0:
             players = ",".join([p.display_name for p in players_to_remove])
@@ -63,7 +63,9 @@ class PokerGame(ABC):
         self._round = RoundType(round)
         self._last_bet = 0
         for player in self._players:
-            if player.move not in [MoveType.FOLD, MoveType.OUT] or round == 1:
+            if (
+                player.move != MoveType.FOLD or round == 1
+            ) and player.move != MoveType.OUT:
                 player.move = None
                 player.last_bet = 0
 
@@ -177,7 +179,7 @@ class PokerGame(ABC):
         while True:
             npi = move_one_player_round(npi)
             np = self.players[npi]
-            if np.move not in [MoveType.FOLD, MoveType.OUT]:
+            if (np.move not in [MoveType.FOLD, MoveType.OUT]) or np.chips > 0:
                 return npi
 
     @property
@@ -234,6 +236,7 @@ class PokerGame(ABC):
             winner = self.players[self.players.index(winner_name)]
             winner.chips += share_of_pot
 
+        self.post_hand()
         self.next_hand()
 
     def next_hand(self):
@@ -241,7 +244,9 @@ class PokerGame(ABC):
         for player in self.players:
             player.chips_played = 0
         self._round = RoundType(0)
-        self.players.move_dealer(1)
+        new_dealer_idx = self._next_players_turn(self._players.dealer_idx)
+        self.players[self.players.dealer_idx].dealer = False
+        self.players[new_dealer_idx].dealer = True
 
     def win_sidepot(self, player_order: list) -> None:
         """Split pot appropriately between players
@@ -272,6 +277,7 @@ class PokerGame(ABC):
                 self._logger.msg(f"{plyr.display_name} wins £{my_sidepot}", True)
             plyr.chips_played = 0
             plyr.chips += my_sidepot
+        self.post_hand()
         self.next_hand()
 
     @property
@@ -297,6 +303,10 @@ class PokerGame(ABC):
             bool: whether there is a sidepot or not
         """
         return self.num_sidepots > 1 and len(self.players_in) > 2
+
+    def post_hand(self):
+        """anything that should happen after winners of hand are chosen"""
+        self.eliminate_players_who_went_out()
 
     def to_json(self):
         def default(x):
