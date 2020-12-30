@@ -265,7 +265,8 @@ const App = () => {
             });
           });
       },
-      reload: () => {
+      reload: async () => {
+        await removeUserToken();
         dispatch({ type: "RELOAD" });
       },
     }),

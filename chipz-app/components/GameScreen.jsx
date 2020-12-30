@@ -497,7 +497,6 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
 
     const gameOver = gameData._game_over;
     if (gameOver) {
-      console.log("gameover", gameOver);
       return (
         <GameOverScreen
           winner={gameData._players_on_backs[0]}
