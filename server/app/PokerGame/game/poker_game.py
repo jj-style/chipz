@@ -96,6 +96,10 @@ class PokerGame(ABC):
     def pot(self) -> int:
         return sum(player.chips_played for player in self.players)
 
+    @property
+    def game_over(self) -> bool:
+        return len(self.players_in) == 1
+
     def add_player(self, player_name: str, is_dealer: bool) -> None:
         if is_dealer is True and self._players.dealer is not None:
             raise ValueError("There is already a dealer in the game")
@@ -326,6 +330,7 @@ class PokerGame(ABC):
                 "_is_sidepot": self.is_sidepot,
                 "_num_sidepots": self.num_sidepots,
                 "_players_on_backs": self.players_in,
+                "_game_over": self.game_over,
             },
         }
         return json.dumps(

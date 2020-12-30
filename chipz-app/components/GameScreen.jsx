@@ -26,6 +26,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { SplashScreen } from "./SplashScreen";
 
 import { websocket } from "../socket";
+import { GameOverScreen } from "./GameOverScreen";
 
 const tmpState = {
   pot: 20,
@@ -491,8 +492,18 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
     thisPlayerCanPlay = !(
       thisPlayer._last_move === "FOLD" || thisPlayer._last_move === "OUT"
     );
-  }
 
+    const gameOver = gameData._game_over;
+    if (gameOver) {
+      console.log("gameover", gameOver);
+      return (
+        <GameOverScreen
+          winner={gameData._players_on_backs[0]}
+          contextProvider={contextProvider}
+        />
+      );
+    }
+  }
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator

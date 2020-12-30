@@ -265,6 +265,9 @@ const App = () => {
             });
           });
       },
+      reload: () => {
+        dispatch({ type: "RELOAD" });
+      },
     }),
     []
   );

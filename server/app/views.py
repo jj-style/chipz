@@ -183,10 +183,20 @@ def make_move(room, move: str, bet_amount: int):
 @socketio.on("SELECT_WINNERS")
 def select_winners(room, players: list):
     GAMES[room].win_pot(players)
-    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
+    game_json = GAMES[room].to_json()
+    after_round(room)
+    emit("GOT_GAME_INFO", game_json, room=room)
 
 
 @socketio.on("SELECT_SIDEPOT_WINNERS")
 def select_sidepot_winners(room, players: list):
     GAMES[room].win_sidepot(players)
-    emit("GOT_GAME_INFO", GAMES[room].to_json(), room=room)
+    game_json = GAMES[room].to_json()
+    after_round()
+    emit("GOT_GAME_INFO", game_json, room=room)
+
+
+def after_round(room):
+    print(f"deleting game {room}")
+    if GAMES[room].game_over:
+        GAMES.pop(room)
