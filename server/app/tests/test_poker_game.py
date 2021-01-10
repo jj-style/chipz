@@ -323,16 +323,14 @@ def test_gameplay_3():
     assert game.players[0].last_bet == 20
     assert game.players[0].move == MoveType.CALL
 
-    game.current_player_make_move(
-        "bet", bet=40
-    )  # this is a raise to 40 not a bet of 40
-    assert game.players[1].last_bet == 40
+    game.current_player_make_move("bet", bet=40)
+    assert game.players[1].last_bet == 60
     assert game.players[1].move == MoveType.BET
 
     game.current_player_make_move("call")
 
     assert game.round == RoundType.FLOP
-    assert game.pot == 80
+    assert game.pot == 120
 
 
 def test_is_no_sidepot():

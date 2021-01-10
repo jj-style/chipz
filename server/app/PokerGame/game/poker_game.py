@@ -118,25 +118,15 @@ class PokerGame(ABC):
         player.move = MoveType[move.upper()]
         if player.move == MoveType.BET:
             bet_amount = kwargs.get("bet", 0)
-            if self._last_bet == 0 or kwargs.get("blinds"):
-                if not kwargs.get("blinds"):
-                    self._logger.msg(f"{player.display_name} bets £{bet_amount}", True)
-                player.make_a_bet(bet_amount)  # bet
-            else:
-                self._logger.msg(
-                    f"""{player.display_name} raises £{bet_amount - player.last_bet} to \
-£{bet_amount}""",
-                    True,
-                )
-                player.make_a_bet(bet_amount - player.last_bet)  # raise
+            if not kwargs.get("blinds"):
+                self._logger.msg(f"{player.display_name} bets £{bet_amount}", True)
+            player.make_a_bet(bet_amount)  # bet
 
             if bet_amount > 0:
                 # need to update min_raise
-                self._min_raise = bet_amount + (bet_amount - self._last_bet)
-                self._last_bet = bet_amount
+                self._min_raise = bet_amount - self._last_bet
+                self._last_bet = player.last_bet
 
-        # TODO: need additional logic for folding and stuff
-        # TODO: win round if 1 player left etc.
         elif player.move == MoveType.CALL:
             amount_to_call = self._last_bet - player.last_bet
             if amount_to_call > player.chips:
@@ -399,9 +389,7 @@ class BlindsPokerGame(PokerGame):
                 bet=self.big_blind,
                 blinds=True,
             )
-            self._min_raise = (
-                self.big_blind * 2
-            )  # special case for min raise after blinds
+            self._min_raise = self.big_blind  # special case for min raise after blinds
             self.players[
                 (self.current_players_turn - 1) % len(self.players)
             ].move = None  # give bb chance to check or bet when it comes back round

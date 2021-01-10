@@ -15,7 +15,10 @@ import update from "immutability-helper";
 import * as gStyle from "./globalStyle";
 import { StyledButton } from "./StyledButton";
 
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  getActionFromState,
+  NavigationContainer,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import { leaveGameAlert } from "./LeaveGame";
@@ -101,21 +104,23 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
     (obj) => obj._name === token.displayName
   );
   const chipStack = thisPlayer._chips;
-  const minBet =
-    (gameData._min_raise > chipStack ? chipStack : gameData._min_raise) || 10;
 
-  var betButtonText = "Bet";
-  if (gameData._last_bet > 0) {
-    betButtonText = "Raise to";
-  }
-  if (minBet === chipStack) {
-    betButtonText = "All in";
-  }
+  let minBet = gameData._min_raise + gameData._last_bet;
+
+  minBet = (minBet > chipStack ? chipStack : minBet) || 10;
 
   const [newBet, setNewBet] = useState(0);
   useEffect(() => {
     setNewBet(minBet);
   }, [minBet]);
+
+  let betButtonText = "Bet";
+  // if (gameData._last_bet > 0) {
+  //   betButtonText = "Raise to";
+  // }
+  if (newBet === chipStack) {
+    betButtonText = "All in";
+  }
 
   const players_turn_name =
     gameData._players._players[gameData._players_turn]._name;
@@ -148,7 +153,11 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           />
         ) : (
           <StyledButton
-            buttonText={`Call ${gameData._last_bet - thisPlayer._last_bet}`}
+            buttonText={`Call ${
+              gameData._last_bet - thisPlayer._last_bet > chipStack
+                ? chipStack
+                : gameData._last_bet - thisPlayer._last_bet
+            }`}
             onPress={() => makeMove("call")}
             style={styles.bigButton}
             textStyle={styles.bigText}
