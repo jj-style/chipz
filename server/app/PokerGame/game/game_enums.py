@@ -6,6 +6,7 @@ class MoveType(Enum):
     CHECK = auto()
     CALL = auto()
     BET = auto()
+    OUT = auto()
 
 
 class RoundType(Enum):
@@ -14,4 +15,4 @@ class RoundType(Enum):
     FLOP = 2
     TURN = 3
     RIVER = 4
-    SHOWDOWN = 5
+    ON_BACKS = 5

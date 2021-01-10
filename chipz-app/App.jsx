@@ -242,6 +242,33 @@ const App = () => {
             });
           });
       },
+      leaveGameInGame: async (data) => {
+        const { gameCode, displayName } = data;
+        fetch(`${api}/game/${gameCode}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+          .then((res) => {
+            if (res.status >= 400) throw res.json();
+            return res.json();
+          })
+          .then(async (newdata) => {
+            await removeUserToken();
+            websocket.emit("leave", { name: displayName, gameCode: gameCode });
+            dispatch({ type: "RELOAD" });
+            websocket.emit("GET_IN_GAME_INFO", gameCode);
+          })
+          .catch((error) => {
+            error.then((e) => {
+              console.log(e);
+            });
+          });
+      },
+      reload: async () => {
+        await removeUserToken();
+        dispatch({ type: "RELOAD" });
+      },
     }),
     []
   );

@@ -1,6 +1,8 @@
 from abc import ABC
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 import json
+import operator
 from enum import Enum
 from .game_enums import MoveType, RoundType
 from app.PokerGame.player import Player, PlayerList
@@ -17,38 +19,58 @@ class PokerGame(ABC):
         self._min_raise: int = -1
         self._last_bet: int = -1
         self._logger: GameLogger = GameLogger()
+        self._total_players: int = (
+            -1
+        )  # total number of players still in poker game at any given point
 
     def start_game(self):
         """Anything that should happen ONCE the entire game"""
         self._started_at = datetime.now()
         self._round = RoundType(0)  # set round to pre_hand
+        self._total_players = len(self.players)
 
     def start_hand(self):
         """Anything that should happen before the pre-flop each hand"""
         self.start_round(1)
+
+    def eliminate_players_who_went_out(self):
+        """remove players that went out during the round and
+        log their names and the positions they went out in
+        """
+        players_to_remove = []
+        for player in self._players:
+            if player.chips == 0 and player.move != MoveType.OUT:
+                players_to_remove.append(player)
+                player.move = MoveType.OUT
+
+        if len(players_to_remove) > 0:
+            players = ",".join([p.display_name for p in players_to_remove])
+            positions = ",".join(
+                map(
+                    str,
+                    range(
+                        self._total_players,
+                        self._total_players - len(players_to_remove),
+                        -1,
+                    ),
+                )
+            )
+            self._logger.msg(f"{players} checked out {positions}", True)
+            self._total_players -= len(players_to_remove)
 
     def start_round(self, round: int):
         """Anything that should happen before the next stage within a hand"""
         self._round = RoundType(round)
         self._last_bet = 0
         for player in self._players:
-            if player.move != MoveType.FOLD or round == 1:
+            if (
+                player.move != MoveType.FOLD or round == 1
+            ) and player.move != MoveType.OUT:
                 player.move = None
                 player.last_bet = 0
 
         # select first left of dealer who hasn't folded to start round
-        valid_next_player = False
-        inc = 0
-        while not valid_next_player:
-            inc += 1
-            self._players_turn = (self._players.dealer_idx + inc) % len(
-                self._players
-            )  # set left of dealer to go first
-            valid_next_player = (
-                True
-                if self.players[self.current_players_turn].move != MoveType.FOLD
-                else False
-            )
+        self._players_turn = self._next_players_turn(self._players.dealer_idx)
 
     @property
     def min_raise(self) -> int:
@@ -74,6 +96,10 @@ class PokerGame(ABC):
     def pot(self) -> int:
         return sum(player.chips_played for player in self.players)
 
+    @property
+    def game_over(self) -> bool:
+        return len(self.players_in) == 1
+
     def add_player(self, player_name: str, is_dealer: bool) -> None:
         if is_dealer is True and self._players.dealer is not None:
             raise ValueError("There is already a dealer in the game")
@@ -92,41 +118,35 @@ class PokerGame(ABC):
         player.move = MoveType[move.upper()]
         if player.move == MoveType.BET:
             bet_amount = kwargs.get("bet", 0)
-            if self._last_bet == 0 or kwargs.get("blinds"):
-                if not kwargs.get("blinds"):
-                    self._logger.msg(f"{player.display_name} bets £{bet_amount}", True)
-                player.make_a_bet(bet_amount)  # bet
-            else:
-                self._logger.msg(
-                    f"""{player.display_name} raises £{bet_amount - player.last_bet} to \
-£{bet_amount}""",
-                    True,
-                )
-                player.make_a_bet(bet_amount - player.last_bet)  # raise
+            if not kwargs.get("blinds"):
+                self._logger.msg(f"{player.display_name} bets £{bet_amount}", True)
+            player.make_a_bet(bet_amount)  # bet
 
             if bet_amount > 0:
                 # need to update min_raise
-                self._min_raise = bet_amount + (bet_amount - self._last_bet)
-                self._last_bet = bet_amount
+                self._min_raise = bet_amount - self._last_bet
+                self._last_bet = player.last_bet
 
-        # TODO: need additional logic for folding and stuff
-        # TODO: win round if 1 player left etc.
         elif player.move == MoveType.CALL:
-            self._logger.msg(
-                f"{player.display_name} calls £{self._last_bet - player.last_bet}", True
-            )
-            player.make_a_bet(self._last_bet - player.last_bet)
+            amount_to_call = self._last_bet - player.last_bet
+            if amount_to_call > player.chips:
+                amount_to_call = player.chips
+            self._logger.msg(f"{player.display_name} calls £{amount_to_call}", True)
+            player.make_a_bet(amount_to_call)
 
         elif player.move == MoveType.FOLD:
             self._logger.msg(f"{player.display_name} folds", True)
             if self.end_of_hand:
                 # player who hasn't folded wins the pot
                 self.win_pot(
-                    [p for p in self.players if p.move != MoveType.FOLD][0].display_name
+                    [
+                        [
+                            p
+                            for p in self.players
+                            if p.move not in [MoveType.FOLD, MoveType.OUT]
+                        ][0].display_name
+                    ]
                 )
-                # self.start_hand()
-                self._round = RoundType(0)
-                self.players.move_dealer(1)
                 return
 
         elif player.move == MoveType.CHECK:
@@ -136,18 +156,25 @@ class PokerGame(ABC):
             self._round = RoundType(self._round.value + 1)
             self.start_round(self._round)
         else:
-            self._next_players_turn()  # move turn around
+            next_player_idx = self._next_players_turn(
+                self._players_turn
+            )  # move turn around
+            self._players_turn = next_player_idx
 
-    def _next_players_turn(self):
-        """update pointer to current player by skipping over players who have folded"""
+    def _next_players_turn(self, from_) -> int:
+        """return index to players of next player whose turn it is
+        by skipping over players who have folded or are out
+        """
         # TODO: do a thing like if didn't change then one player left so you won
-        def move_one_player_round():
-            self._players_turn = (self._players_turn + 1) % len(self._players)
+        def move_one_player_round(current):
+            return (current + 1) % len(self._players)
 
+        npi = from_
         while True:
-            move_one_player_round()
-            if not self.players[self.current_players_turn].move == MoveType.FOLD:
-                break
+            npi = move_one_player_round(npi)
+            np = self.players[npi]
+            if np.move not in [MoveType.FOLD, MoveType.OUT]:
+                return npi
 
     @property
     def end_of_round(self) -> bool:
@@ -164,7 +191,7 @@ class PokerGame(ABC):
                 player.move is None
             ):  # if a player hasn't played a move can't be end of round
                 return False
-            elif player.move != MoveType.FOLD:
+            elif player.move not in [MoveType.FOLD, MoveType.OUT]:
                 if player.chips_played != max_chips and not player.is_all_in:
                     return False
         return True
@@ -176,26 +203,104 @@ class PokerGame(ABC):
         Returns:
             bool: whether the hand has ended
         """
-        return len([p for p in self.players if p.move != MoveType.FOLD]) == 1
+        return (
+            len(
+                [p for p in self.players if p.move not in [MoveType.FOLD, MoveType.OUT]]
+            )
+            == 1
+        )
 
     @property
     def round(self) -> RoundType:
         return self._round
 
-    def win_pot(self, player_name: str) -> None:
-        winner = self.players[self.players.index(player_name)]
+    def win_pot(self, player_names: list) -> None:
+        a_winner = self.players[self.players.index(player_names[0])]
         for player in self.players:
             # for all other players - make their bets no bigger than the winner's
-            if player.display_name != player_name:
-                if player.chips_played > winner.chips_played:
-                    diff = player.chips_played - winner.chips_played
+            if player.display_name not in player_names:
+                if player.chips_played > a_winner.chips_played:
+                    diff = player.chips_played - a_winner.chips_played
                     player.chips_played -= diff
                     player.chips += diff
 
-        self._logger.msg(f"{player_name} wins pot of £{self.pot}", True)
-        winner.chips += self.pot
+        share_of_pot = int(self.pot / len(player_names))
+        for winner_name in player_names:
+            self._logger.msg(f"{winner_name} wins £{share_of_pot}", True)
+            winner = self.players[self.players.index(winner_name)]
+            winner.chips += share_of_pot
+
+        self.post_hand()
+        self.next_hand()
+
+    def next_hand(self):
+        """move to next hand"""
         for player in self.players:
             player.chips_played = 0
+        self._round = RoundType(0)
+        new_dealer_idx = self._next_players_turn(self._players.dealer_idx)
+        self.players[self.players.dealer_idx].dealer = False
+        self.players[new_dealer_idx].dealer = True
+
+    def win_sidepot(self, player_order: list) -> None:
+        """Split pot appropriately between players
+        Arguments:
+            player_order: list - player names in order they should take part of the pot
+        """
+        # NOTE: edge case as players could have same hand within a sidepot split
+        # but not implemented so player's must be given distinct order
+        players_cls = [
+            self.players[self.players.index(p)] for p in player_order
+        ]  # list of player classes in order they are given
+
+        for plyr_idx in range(len(players_cls)):
+            plyr = players_cls[plyr_idx]
+            my_sidepot = plyr.chips_played  # put their chips into their sidepot
+            for othr_plyr_idx in range(plyr_idx + 1, len(players_cls)):
+                # for each other player win money from them
+                othr_plyr = players_cls[othr_plyr_idx]
+                # player can win max of what they have bet against other players
+                win_from_player = (
+                    othr_plyr.chips_played
+                    if othr_plyr.chips_played <= plyr.chips_played
+                    else plyr.chips_played
+                )
+                my_sidepot += win_from_player
+                othr_plyr.chips_played -= win_from_player
+            if my_sidepot > 0:
+                self._logger.msg(f"{plyr.display_name} wins £{my_sidepot}", True)
+            plyr.chips_played = 0
+            plyr.chips += my_sidepot
+        self.post_hand()
+        self.next_hand()
+
+    @property
+    def players_in(self):
+        return [p for p in self.players if p.move not in [MoveType.FOLD, MoveType.OUT]]
+
+    @property
+    def num_sidepots(self) -> int:
+        """Returns the max number of sidepots to be won
+        (how many different chips in front)
+
+        Not really the number of sidepots but not sure what to call it.
+        """
+
+        return len(set([p.chips_played for p in self.players_in]))
+
+    @property
+    def is_sidepot(self) -> bool:
+        """Given in ON_BACKS state, is there a sidepot or will pot be split equally
+        There is a sidepot if for all the players who are still in, their chips they've
+        played are not equal
+        Returns:
+            bool: whether there is a sidepot or not
+        """
+        return self.num_sidepots > 1 and len(self.players_in) > 2
+
+    def post_hand(self):
+        """anything that should happen after winners of hand are chosen"""
+        self.eliminate_players_who_went_out()
 
     def to_json(self):
         def default(x):
@@ -208,7 +313,16 @@ class PokerGame(ABC):
             else:
                 return x.__dict__
 
-        full_dict = {**self.__dict__, **{"_pot": self.pot}}
+        full_dict = {
+            **self.__dict__,
+            **{
+                "_pot": self.pot,
+                "_is_sidepot": self.is_sidepot,
+                "_num_sidepots": self.num_sidepots,
+                "_players_on_backs": self.players_in,
+                "_game_over": self.game_over,
+            },
+        }
         return json.dumps(
             full_dict,
             default=default,
@@ -250,27 +364,32 @@ class BlindsPokerGame(PokerGame):
 
     def start_game(self):
         super().start_game()
-        self.set_blinds_up_at()
+
+    def start_hand(self):
+        """update blinds and set new blinds up at time if time is greater
+        than blinds up at time
+        """
+        if self._blinds_up_at is None or (
+            self._blinds_up_at is not None and datetime.now() > self._blinds_up_at
+        ):
+            self.set_blinds_up_at()
+        super().start_hand()
 
     def start_round(self, round: int):
         super().start_round(round)
         # if pre-flop is starting small blind and big blind put down their bet
         if self._round == RoundType.PRE_FLOP:
-            self.player_make_move(
-                self.players[self.current_players_turn].display_name,
+            self.current_player_make_move(
                 "bet",
                 bet=self.small_blind,
                 blinds=True,
             )
-            self.player_make_move(
-                self.players[self.current_players_turn].display_name,
+            self.current_player_make_move(
                 "bet",
                 bet=self.big_blind,
                 blinds=True,
             )
-            self._min_raise = (
-                self.big_blind * 2
-            )  # special case for min raise after blinds
+            self._min_raise = self.big_blind  # special case for min raise after blinds
             self.players[
                 (self.current_players_turn - 1) % len(self.players)
             ].move = None  # give bb chance to check or bet when it comes back round

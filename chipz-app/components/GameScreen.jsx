@@ -8,11 +8,17 @@ import {
   FlatList,
   SafeAreaView,
 } from "react-native";
+import CheckBox from "@react-native-community/checkbox";
+
+import update from "immutability-helper";
 
 import * as gStyle from "./globalStyle";
 import { StyledButton } from "./StyledButton";
 
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  getActionFromState,
+  NavigationContainer,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import { leaveGameAlert } from "./LeaveGame";
@@ -23,6 +29,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { SplashScreen } from "./SplashScreen";
 
 import { websocket } from "../socket";
+import { GameOverScreen } from "./GameOverScreen";
 
 const tmpState = {
   pot: 20,
@@ -97,21 +104,23 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
     (obj) => obj._name === token.displayName
   );
   const chipStack = thisPlayer._chips;
-  const minBet =
-    gameData._min_raise > chipStack ? chipStack : gameData._min_raise;
 
-  var betButtonText = "Bet";
-  if (gameData._last_bet > 0) {
-    betButtonText = "Raise to";
-  }
-  if (minBet === chipStack) {
-    betButtonText = "All in";
-  }
+  let minBet = gameData._min_raise + gameData._last_bet;
+
+  minBet = (minBet > chipStack ? chipStack : minBet) || 10;
 
   const [newBet, setNewBet] = useState(0);
   useEffect(() => {
     setNewBet(minBet);
   }, [minBet]);
+
+  let betButtonText = "Bet";
+  // if (gameData._last_bet > 0) {
+  //   betButtonText = "Raise to";
+  // }
+  if (newBet === chipStack) {
+    betButtonText = "All in";
+  }
 
   const players_turn_name =
     gameData._players._players[gameData._players_turn]._name;
@@ -144,71 +153,77 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
           />
         ) : (
           <StyledButton
-            buttonText={`Call ${gameData._last_bet - thisPlayer._last_bet}`}
+            buttonText={`Call ${
+              gameData._last_bet - thisPlayer._last_bet > chipStack
+                ? chipStack
+                : gameData._last_bet - thisPlayer._last_bet
+            }`}
             onPress={() => makeMove("call")}
             style={styles.bigButton}
             textStyle={styles.bigText}
           />
         )}
-        <TouchableHighlight
-          onPress={() => makeMove("bet", newBet)}
-          style={[styles.betButton]}
-          underlayColor="#e6e6e6"
-        >
-          <View style={{ width: "100%", alignItems: "center" }}>
-            <Text style={{ fontSize: 18 }}>
-              {betButtonText}: £{newBet}
-            </Text>
-            <Slider
-              minimumValue={minBet}
-              maximumValue={chipStack}
-              step={minBet}
-              onValueChange={(n) => setNewBet(n)}
-              value={newBet}
-              style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
-            />
-            <View style={styles.quickBetRow}>
-              <StyledButton
-                buttonText="Min"
-                onPress={() => {
-                  setNewBet(minBet);
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
+        {thisPlayer._chips > 0 ? (
+          <TouchableHighlight
+            onPress={() => makeMove("bet", newBet)}
+            style={[styles.betButton]}
+            underlayColor="#e6e6e6"
+          >
+            <View style={{ width: "100%", alignItems: "center" }}>
+              <Text style={{ fontSize: 18 }}>
+                {betButtonText}: £{newBet}
+              </Text>
+              <Slider
+                minimumValue={minBet}
+                maximumValue={chipStack}
+                step={minBet}
+                onValueChange={(n) => setNewBet(n)}
+                value={newBet}
+                style={{ width: "75%", marginTop: 10, marginBottom: 10 }}
               />
-              <StyledButton
-                buttonText="1/2 Pot"
-                onPress={() => {
-                  setNewBet(
-                    Math.ceil(gameData._pot / 2) <= chipStack
-                      ? Math.ceil(gameData._pot / 2)
-                      : chipStack
-                  );
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
-              <StyledButton
-                buttonText="Pot"
-                onPress={() => {
-                  setNewBet(
-                    gameData._pot <= chipStack ? gameData._pot : chipStack
-                  );
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
-              <StyledButton
-                buttonText="Max"
-                onPress={() => {
-                  setNewBet(chipStack);
-                }}
-                style={{ width: "17%" }}
-                textStyle={{ fontWeight: "bold", fontSize: 12 }}
-              />
+              <View style={styles.quickBetRow}>
+                <StyledButton
+                  buttonText="Min"
+                  onPress={() => {
+                    setNewBet(minBet);
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="1/2 Pot"
+                  onPress={() => {
+                    setNewBet(
+                      Math.ceil(gameData._pot / 2) <= chipStack
+                        ? Math.ceil(gameData._pot / 2)
+                        : chipStack
+                    );
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="Pot"
+                  onPress={() => {
+                    setNewBet(
+                      gameData._pot <= chipStack ? gameData._pot : chipStack
+                    );
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+                <StyledButton
+                  buttonText="Max"
+                  onPress={() => {
+                    setNewBet(chipStack);
+                  }}
+                  style={{ width: "17%" }}
+                  textStyle={{ fontWeight: "bold", fontSize: 12 }}
+                />
+              </View>
             </View>
-          </View>
-        </TouchableHighlight>
+          </TouchableHighlight>
+        ) : null}
       </View>
     </View>
   );
@@ -216,12 +231,20 @@ const PlayScreen = ({ gameData, contextProvider, token, makeMove }) => {
 
 const PlayerStats = ({ info, thisPlayer }) => {
   const fontWeight = thisPlayer === info._name ? "bold" : "normal";
+  const color =
+    info._last_move === "OUT"
+      ? "red"
+      : info._last_move === "FOLD"
+      ? "gray"
+      : "black";
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
-      <Text style={[styles.infoName, { fontWeight: fontWeight }]}>
+      <Text style={[styles.infoName, { fontWeight: fontWeight, color: color }]}>
         {info._name}
       </Text>
-      <Text style={[styles.infoChips, { fontWeight: fontWeight }]}>
+      <Text
+        style={[styles.infoChips, { fontWeight: fontWeight, color: color }]}
+      >
         £{info._chips}
       </Text>
     </View>
@@ -229,7 +252,7 @@ const PlayerStats = ({ info, thisPlayer }) => {
 };
 
 const InfoScreen = ({ contextProvider, token, gameData }) => {
-  const { leaveGame } = useContext(contextProvider);
+  const { leaveGameInGame } = useContext(contextProvider);
   const copyPlayers = [...gameData._players._players];
 
   return (
@@ -284,7 +307,7 @@ const InfoScreen = ({ contextProvider, token, gameData }) => {
             leaveGameAlert(
               () => null,
               () =>
-                leaveGame({
+                leaveGameInGame({
                   gameCode: token.gameCode,
                   displayName: token.displayName,
                 })
@@ -345,6 +368,101 @@ const LogScreen = ({ logMessages }) => {
   );
 };
 
+const SplitPotWinnersScreen = ({ gameData, confirmCallback }) => {
+  var playersToChoose = gameData._players_on_backs;
+  const [state, setState] = useState(
+    playersToChoose.map((p) => ({
+      ...p,
+      selectedToWin: false,
+    }))
+  );
+  const setPlayerSelected = (i, newVal) => {
+    setState(
+      update(state, {
+        [i]: {
+          selectedToWin: {
+            $set: newVal,
+          },
+        },
+      })
+    );
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, marginLeft: 20, marginTop: 40 }}>
+      <Text style={{ fontSize: 18, alignSelf: "center" }}>
+        Select winning player(s) to split the pot
+      </Text>
+      <Text style={{ fontSize: 18, alignSelf: "center" }}>
+        Pot: £{gameData._pot}
+      </Text>
+      <gStyle.HorizontalRule />
+      <FlatList
+        data={state}
+        renderItem={(item) => (
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={styles.bigText}>{item.item._name}</Text>
+            <CheckBox
+              value={item.item.selectedToWin}
+              onValueChange={(newVal) => setPlayerSelected(item.index, newVal)}
+            />
+          </View>
+        )}
+        keyExtractor={(_, index) => `selectablePlayer-${index}`}
+      />
+      <StyledButton
+        buttonText="Confirm Winners"
+        underlayColor={gStyle.buttonUnderlayColor}
+        onPress={() =>
+          confirmCallback(
+            state.filter((p) => p.selectedToWin === true).map((p) => p._name)
+          )
+        }
+        disabled={state.filter((p) => p.selectedToWin === true).length === 0}
+      />
+    </SafeAreaView>
+  );
+};
+
+const SelectWinnerScreen = ({ gameData, token }) => {
+  const dealerPlayer = gameData._players._players.find(
+    (o) => o._dealer === true
+  );
+  const isDealer = dealerPlayer._name === token.displayName;
+
+  const splitPotCallback = (names) => {
+    websocket.emit("SELECT_WINNERS", token.gameCode, names);
+  };
+
+  const sidepotCallback = (names) => {
+    websocket.emit("SELECT_SIDEPOT_WINNERS", token.gameCode, names);
+  };
+
+  return isDealer ? (
+    gameData._is_sidepot === false ? (
+      <SplitPotWinnersScreen
+        gameData={gameData}
+        confirmCallback={splitPotCallback}
+      />
+    ) : (
+      <SidepotOrderScreen
+        data={gameData._players_on_backs}
+        confirmCallback={sidepotCallback}
+      />
+    )
+  ) : (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text>Waiting for dealer to choose the winner of the hand</Text>
+    </View>
+  );
+};
+
 const Tab = createBottomTabNavigator();
 
 export const GameScreen = ({ navigation, contextProvider, token }) => {
@@ -367,17 +485,35 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
       token.displayName;
     if (is_my_turn) {
       console.log(`move ${moveName} ${betAmount ? betAmount : ""}`);
+      websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
     } else {
       console.log("oi it's not your turn!!!");
     }
-    websocket.emit("MAKE_MOVE", token.gameCode, moveName, betAmount || -1);
   };
 
   const startHand = () => {
     websocket.emit("STARTHAND", token.gameCode);
   };
 
-  // TODO: if roundtype is showdown then return select winner screen not tab navigation
+  var thisPlayerCanPlay = false;
+  if (!loading) {
+    const thisPlayer = gameData._players._players.find(
+      (obj) => obj._name === token.displayName
+    );
+    thisPlayerCanPlay = !(
+      thisPlayer._last_move === "FOLD" || thisPlayer._last_move === "OUT"
+    );
+
+    const gameOver = gameData._game_over;
+    if (gameOver) {
+      return (
+        <GameOverScreen
+          winner={gameData._players_on_backs[0]}
+          contextProvider={contextProvider}
+        />
+      );
+    }
+  }
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
@@ -393,6 +529,8 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
               iconName = focused ? "clock" : "clock-outline";
             } else if (route.name === "Log") {
               iconName = focused ? "file-document" : "file-document-outline";
+            } else if (route.name === "Choose Winners") {
+              iconName = "check-all";
             }
             return <Icon name={iconName} size={size} color={color} />;
           },
@@ -404,6 +542,16 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
       >
         {loading ? (
           <Tab.Screen name="Loading" component={SplashScreen} />
+        ) : gameData._round === "ON_BACKS" ? (
+          <Tab.Screen name="Choose Winners">
+            {(props) => (
+              <SelectWinnerScreen
+                {...props}
+                gameData={gameData}
+                token={token}
+              />
+            )}
+          </Tab.Screen>
         ) : (
           <>
             {gameData._round === "PRE_HAND" ? (
@@ -417,7 +565,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   />
                 )}
               </Tab.Screen>
-            ) : (
+            ) : thisPlayerCanPlay ? (
               <Tab.Screen name="Play">
                 {(props) => (
                   <PlayScreen
@@ -429,7 +577,7 @@ export const GameScreen = ({ navigation, contextProvider, token }) => {
                   />
                 )}
               </Tab.Screen>
-            )}
+            ) : null}
             <Tab.Screen name="Info">
               {(props) => (
                 <InfoScreen

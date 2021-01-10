@@ -1,4 +1,5 @@
 import pytest
+from copy import deepcopy
 
 from app.PokerGame.game import (
     NoBlindsPokerGame,
@@ -227,6 +228,44 @@ def test_player_wins_money_when_others_all_fold():
     assert game.players[1].chips == 1000 - (matching_pot / 2)
 
 
+def test_players_split_money_when_win_pot():
+    game = BlindsPokerGame(100, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # bb
+    game.add_player("Peter Parker", is_dealer=True)  # dealer first to go
+    game.add_player("Bruce Banner", is_dealer=False)  # sb
+    game.start_game()
+    game.start_hand()
+
+    # pre-flop
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
+    game.current_player_make_move("check")
+
+    # flop
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    # turn
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    # river
+    game.current_player_make_move("bet", bet=50)
+    game.current_player_make_move("call")
+    game.current_player_make_move("fold")
+
+    # on_backs
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is False
+
+    game.win_pot(["Tony Stark", "Bruce Banner"])
+    assert game.players[0].chips == 110
+    assert game.players[2].chips == 110
+    assert game.players[1].chips == 80
+
+
 def test_gameplay_2():
     game = BlindsPokerGame(100, 10, 10)
     game.add_player("Tony Stark", is_dealer=False)  # sb first
@@ -284,13 +323,107 @@ def test_gameplay_3():
     assert game.players[0].last_bet == 20
     assert game.players[0].move == MoveType.CALL
 
-    game.current_player_make_move(
-        "bet", bet=40
-    )  # this is a raise to 40 not a bet of 40
-    assert game.players[1].last_bet == 40
+    game.current_player_make_move("bet", bet=40)
+    assert game.players[1].last_bet == 60
     assert game.players[1].move == MoveType.BET
 
     game.current_player_make_move("call")
 
     assert game.round == RoundType.FLOP
-    assert game.pot == 80
+    assert game.pot == 120
+
+
+def test_is_no_sidepot():
+    game = BlindsPokerGame(100, 10, 10)
+    game.add_player("Tony Stark", is_dealer=False)  # sb first
+    game.add_player("Peter Parker", is_dealer=True)  # dealer bb
+    game.start_game()
+    game.start_hand()
+
+    assert game.round == RoundType.PRE_FLOP
+    game.current_player_make_move("call")
+    game.current_player_make_move("check")
+
+    assert game.round == RoundType.FLOP
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    assert game.round == RoundType.TURN
+    game.current_player_make_move("bet", bet=40)
+    game.current_player_make_move("call")
+
+    assert game.round == RoundType.RIVER
+    game.current_player_make_move("check")
+    game.current_player_make_move("check")
+
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is False
+
+
+def test_is_sidepot():
+    game = NoBlindsPokerGame(100)
+    game.add_player("Tony Stark", is_dealer=False)
+    game.add_player("Peter Parker", is_dealer=True)  # dealer
+    game.add_player("Bruce Banner", is_dealer=False)  # first
+    game.start_game()
+    game.start_hand()
+
+    game._round = RoundType.RIVER
+    game.players[0]._chips = 200
+    game.players[1]._chips = 25
+    game.players[2]._chips = 75
+
+    assert game.round == RoundType.RIVER
+    game.current_player_make_move("bet", bet=75)
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
+
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is True
+
+
+def test_sidepot_1():
+    game = NoBlindsPokerGame(100)
+    game.add_player("Tony Stark", is_dealer=True)  # dealer first
+    game.add_player("Peter Parker", is_dealer=False)  # first to go
+    game.add_player("Bruce Banner", is_dealer=False)
+
+    game.players[0].chips = 75
+    game.players[1].chips = 200
+    game.players[2].chips = 25
+
+    game.start_game()
+    game.start_hand()
+    game._round = RoundType.RIVER
+
+    game.current_player_make_move("bet", bet=200)
+    game.current_player_make_move("call")
+    game.current_player_make_move("call")
+
+    assert game.round == RoundType.ON_BACKS
+    assert game.is_sidepot is True
+    assert game.num_sidepots == 3
+
+    game_copy_1 = deepcopy(game)
+    game_copy_1.win_sidepot(["Tony Stark", "Peter Parker", "Bruce Banner"])
+    assert game_copy_1.players[0].chips == 175
+    assert game_copy_1.players[1].chips == 125
+    assert game_copy_1.players[2].chips == 0
+
+    game_copy_2 = deepcopy(game)
+    game_copy_2.win_sidepot(["Tony Stark", "Bruce Banner", "Peter Parker"])
+    assert game_copy_2.players[0].chips == 175
+    assert game_copy_2.players[1].chips == 125
+    assert game_copy_2.players[2].chips == 0
+
+    game_copy_3 = deepcopy(game)
+    game_copy_3.win_sidepot(["Bruce Banner", "Peter Parker", "Tony Stark"])
+    assert game_copy_3.players[0].chips == 0
+    assert game_copy_3.players[1].chips == 225
+    assert game_copy_3.players[2].chips == 75
+
+    game_copy_4 = deepcopy(game)
+    game_copy_4.win_sidepot(["Bruce Banner", "Tony Stark", "Peter Parker"])
+    assert game_copy_4.players[0].chips == 100
+    assert game_copy_4.players[1].chips == 125
+    assert game_copy_4.players[2].chips == 75
